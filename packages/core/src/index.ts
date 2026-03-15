@@ -59,3 +59,6 @@ export { base64Decode, base64Encode, computeBucket, md5 } from "./hash.js";
 
 // Obfuscation (server → client config compilation)
 export { compileClientConfig, resolveOperator } from "./obfuscate.js";
+
+// SDK key serialization/deserialization
+export { deserializeSdkKey, serializeSdkKey } from "./sdk-key.js";
