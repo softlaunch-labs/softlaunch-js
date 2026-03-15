@@ -20,14 +20,9 @@
  * need to know which format is in use.
  */
 
-import { base64Decode, computeBucket, md5 } from "./hash.js"
-import {
-  buildHashedContextLookup,
-  decodeConditionValue,
-  decodeVariationValue,
-  resolveOperator,
-} from "./obfuscate.js"
-import { evaluateOperator } from "./operators.js"
+import { base64Decode, computeBucket, md5 } from "./hash.js";
+import { buildHashedContextLookup, decodeConditionValue, decodeVariationValue, resolveOperator } from "./obfuscate.js";
+import { evaluateOperator } from "./operators.js";
 import type {
   Condition,
   ConfigBlob,
@@ -41,13 +36,8 @@ import type {
   SegmentRule,
   ServeConfig,
   TargetingRule,
-} from "./types.js"
-import {
-  COMPARISON_OPERATORS,
-  EQUALITY_OPERATORS,
-  LIST_OPERATORS,
-  PATTERN_OPERATORS,
-} from "./types.js"
+} from "./types.js";
+import { COMPARISON_OPERATORS, EQUALITY_OPERATORS, LIST_OPERATORS, PATTERN_OPERATORS } from "./types.js";
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -66,110 +56,90 @@ export function evaluateFlag<T>(
   config: ConfigBlob,
   flagKey: string,
   context: EvaluationContext,
-  defaultValue: T
+  defaultValue: T,
 ): EvaluationDetail<T> {
-  const isClientFormat = config.format === "client"
+  const isClientFormat = config.format === "client";
 
   // Look up the flag (hash the key in client format)
-  const lookupKey = isClientFormat ? md5(flagKey) : flagKey
-  const flag = config.flags[lookupKey]
+  const lookupKey = isClientFormat ? md5(flagKey) : flagKey;
+  const flag = config.flags[lookupKey];
 
   if (!flag) {
-    return makeResult(defaultValue, undefined, "DEFAULT", undefined, undefined)
+    return makeResult(defaultValue, undefined, "DEFAULT", undefined, undefined);
   }
 
   // Check if flag is enabled
   if (!flag.enabled) {
-    const offValue = resolveVariationValue<T>(flag, flag.offVariation, isClientFormat)
-    const offVariationKey = isClientFormat
-      ? decodeVariationKey(flag.offVariation)
-      : flag.offVariation
-    return makeResult(offValue, offVariationKey, "OFF", undefined, undefined)
+    const offValue = resolveVariationValue<T>(flag, flag.offVariation, isClientFormat);
+    const offVariationKey = isClientFormat ? decodeVariationKey(flag.offVariation) : flag.offVariation;
+    return makeResult(offValue, offVariationKey, "OFF", undefined, undefined);
   }
 
   // Check prerequisites
   for (const prerequisite of flag.prerequisites) {
-    const prereqFlagKey = isClientFormat
-      ? findPlainFlagKeyForHash(prerequisite.flagKey)
-      : prerequisite.flagKey
+    const prereqFlagKey = isClientFormat ? findPlainFlagKeyForHash(prerequisite.flagKey) : prerequisite.flagKey;
 
     if (prereqFlagKey === undefined) {
       // Prerequisite flag not found — fail the prerequisite
-      const offValue = resolveVariationValue<T>(flag, flag.offVariation, isClientFormat)
-      const offVariationKey = isClientFormat
-        ? decodeVariationKey(flag.offVariation)
-        : flag.offVariation
-      return makeResult(offValue, offVariationKey, "PREREQUISITE_FAILED", undefined, undefined)
+      const offValue = resolveVariationValue<T>(flag, flag.offVariation, isClientFormat);
+      const offVariationKey = isClientFormat ? decodeVariationKey(flag.offVariation) : flag.offVariation;
+      return makeResult(offValue, offVariationKey, "PREREQUISITE_FAILED", undefined, undefined);
     }
 
     // Recursively evaluate the prerequisite flag
-    const prereqResult = evaluateFlag(config, prereqFlagKey, context, undefined)
+    const prereqResult = evaluateFlag(config, prereqFlagKey, context, undefined);
     const requiredVariationKey = isClientFormat
       ? decodeVariationKey(prerequisite.variationKey)
-      : prerequisite.variationKey
+      : prerequisite.variationKey;
 
     if (prereqResult.variationKey !== requiredVariationKey) {
-      const offValue = resolveVariationValue<T>(flag, flag.offVariation, isClientFormat)
-      const offVariationKey = isClientFormat
-        ? decodeVariationKey(flag.offVariation)
-        : flag.offVariation
-      return makeResult(offValue, offVariationKey, "PREREQUISITE_FAILED", undefined, undefined)
+      const offValue = resolveVariationValue<T>(flag, flag.offVariation, isClientFormat);
+      const offVariationKey = isClientFormat ? decodeVariationKey(flag.offVariation) : flag.offVariation;
+      return makeResult(offValue, offVariationKey, "PREREQUISITE_FAILED", undefined, undefined);
     }
   }
 
   // Check individual targets
-  const contextKeyHash = isClientFormat ? md5(context.key) : context.key
+  const contextKeyHash = isClientFormat ? md5(context.key) : context.key;
   for (const target of flag.individualTargets) {
     if (target.contextKeys.includes(contextKeyHash)) {
-      const value = resolveVariationValue<T>(flag, target.variationKey, isClientFormat)
-      const variationKey = isClientFormat
-        ? decodeVariationKey(target.variationKey)
-        : target.variationKey
-      return makeResult(value, variationKey, "INDIVIDUAL_TARGET", undefined, undefined)
+      const value = resolveVariationValue<T>(flag, target.variationKey, isClientFormat);
+      const variationKey = isClientFormat ? decodeVariationKey(target.variationKey) : target.variationKey;
+      return makeResult(value, variationKey, "INDIVIDUAL_TARGET", undefined, undefined);
     }
   }
 
   // Evaluate targeting rules
   const evaluationState = isClientFormat
     ? { isClientFormat: true as const, hashedContextLookup: buildHashedContextLookup(context) }
-    : { isClientFormat: false as const, hashedContextLookup: undefined }
+    : { isClientFormat: false as const, hashedContextLookup: undefined };
 
   for (const rule of flag.rules) {
-    const ruleMatches = matchesRule(rule, context, config.segments, evaluationState)
+    const ruleMatches = matchesRule(rule, context, config.segments, evaluationState);
 
     if (ruleMatches) {
-      const serveResult = resolveServeConfig(
-        rule.serve,
-        context,
-        config.totalShards,
-        isClientFormat
-      )
+      const serveResult = resolveServeConfig(rule.serve, context, config.totalShards, isClientFormat);
 
       if (serveResult) {
-        const value = resolveVariationValue<T>(flag, serveResult, isClientFormat)
-        const variationKey = isClientFormat ? decodeVariationKey(serveResult) : serveResult
-        const ruleId = isClientFormat ? base64SafeDecode(rule.id) : rule.id
-        return makeResult(value, variationKey, "RULE_MATCH", ruleId, undefined)
+        const value = resolveVariationValue<T>(flag, serveResult, isClientFormat);
+        const variationKey = isClientFormat ? decodeVariationKey(serveResult) : serveResult;
+        const ruleId = isClientFormat ? base64SafeDecode(rule.id) : rule.id;
+        return makeResult(value, variationKey, "RULE_MATCH", ruleId, undefined);
       }
     }
   }
 
   // Fallthrough
-  const fallthroughResult = resolveServeConfig(
-    flag.fallthrough,
-    context,
-    config.totalShards,
-    isClientFormat
-  )
+  const fallthroughResult = resolveServeConfig(flag.fallthrough, context, config.totalShards, isClientFormat);
 
   if (fallthroughResult) {
-    const value = resolveVariationValue<T>(flag, fallthroughResult, isClientFormat)
-    const variationKey = isClientFormat ? decodeVariationKey(fallthroughResult) : fallthroughResult
-    return makeResult(value, variationKey, "FALLTHROUGH", undefined, undefined)
+    const value = resolveVariationValue<T>(flag, fallthroughResult, isClientFormat);
+    const variationKey = isClientFormat ? decodeVariationKey(fallthroughResult) : fallthroughResult;
+    return makeResult(value, variationKey, "FALLTHROUGH", undefined, undefined);
   }
 
   // Should not happen if config is valid, but return default as safety net
-  return makeResult(defaultValue, undefined, "DEFAULT", undefined, undefined)
+  return makeResult(defaultValue, undefined, "DEFAULT", undefined, undefined);
 }
 
 /**
@@ -180,20 +150,17 @@ export function evaluateFlag<T>(
  * @param context      - The evaluation context
  * @returns Map of flag key → evaluated value
  */
-export function evaluateAllFlags(
-  config: ConfigBlob,
-  context: EvaluationContext
-): ReadonlyMap<string, unknown> {
+export function evaluateAllFlags(config: ConfigBlob, context: EvaluationContext): ReadonlyMap<string, unknown> {
   if (config.format !== "server") {
-    throw new Error("evaluateAllFlags is only supported with server-format configs")
+    throw new Error("evaluateAllFlags is only supported with server-format configs");
   }
 
-  const results = new Map<string, unknown>()
+  const results = new Map<string, unknown>();
   for (const flagKey of Object.keys(config.flags)) {
-    const result = evaluateFlag(config, flagKey, context, undefined)
-    results.set(flagKey, result.value)
+    const result = evaluateFlag(config, flagKey, context, undefined);
+    results.set(flagKey, result.value);
   }
-  return results
+  return results;
 }
 
 // ---------------------------------------------------------------------------
@@ -201,95 +168,78 @@ export function evaluateAllFlags(
 // ---------------------------------------------------------------------------
 
 interface ServerEvaluationState {
-  readonly isClientFormat: false
-  readonly hashedContextLookup: undefined
+  readonly isClientFormat: false;
+  readonly hashedContextLookup: undefined;
 }
 
 interface ClientEvaluationState {
-  readonly isClientFormat: true
-  readonly hashedContextLookup: ReadonlyMap<
-    string,
-    string | number | boolean | readonly string[] | undefined
-  >
+  readonly isClientFormat: true;
+  readonly hashedContextLookup: ReadonlyMap<string, string | number | boolean | readonly string[] | undefined>;
 }
 
-type FormatState = ServerEvaluationState | ClientEvaluationState
+type FormatState = ServerEvaluationState | ClientEvaluationState;
 
 function matchesRule(
   rule: TargetingRule,
   context: EvaluationContext,
   segments: Readonly<Record<string, Segment>>,
-  state: FormatState
+  state: FormatState,
 ): boolean {
   // All conditions must match (AND logic)
-  return rule.conditions.every((condition) =>
-    matchesRuleCondition(condition, context, segments, state)
-  )
+  return rule.conditions.every((condition) => matchesRuleCondition(condition, context, segments, state));
 }
 
 function matchesRuleCondition(
   condition: RuleCondition,
   context: EvaluationContext,
   segments: Readonly<Record<string, Segment>>,
-  state: FormatState
+  state: FormatState,
 ): boolean {
   if (condition.type === "segment") {
-    const segment = segments[condition.segmentKey]
-    if (!segment) return false
-    return matchesSegment(segment, context, state)
+    const segment = segments[condition.segmentKey];
+    if (!segment) return false;
+    return matchesSegment(segment, context, state);
   }
 
-  return matchesCondition(condition.condition, context, state)
+  return matchesCondition(condition.condition, context, state);
 }
 
 function matchesSegment(segment: Segment, context: EvaluationContext, state: FormatState): boolean {
   // Segment rules are OR'd: match if ANY rule matches
-  return segment.rules.some((rule) => matchesSegmentRule(rule, context, state))
+  return segment.rules.some((rule) => matchesSegmentRule(rule, context, state));
 }
 
-function matchesSegmentRule(
-  rule: SegmentRule,
-  context: EvaluationContext,
-  state: FormatState
-): boolean {
+function matchesSegmentRule(rule: SegmentRule, context: EvaluationContext, state: FormatState): boolean {
   // Within a segment rule, conditions are AND'd
-  return rule.conditions.every((condition) => matchesCondition(condition, context, state))
+  return rule.conditions.every((condition) => matchesCondition(condition, context, state));
 }
 
 // ---------------------------------------------------------------------------
 // Condition matching
 // ---------------------------------------------------------------------------
 
-function matchesCondition(
-  condition: Condition,
-  context: EvaluationContext,
-  state: FormatState
-): boolean {
+function matchesCondition(condition: Condition, context: EvaluationContext, state: FormatState): boolean {
   // Resolve the operator
-  const operator = resolveOperator(condition.operator)
-  if (!operator) return false
+  const operator = resolveOperator(condition.operator);
+  if (!operator) return false;
 
   // Get the context value for this attribute
-  const contextValue = getContextValueForAttribute(condition.attribute, context, state)
+  const contextValue = getContextValueForAttribute(condition.attribute, context, state);
   if (contextValue === undefined) {
     // Attribute not present in context — condition does not match
-    return false
+    return false;
   }
 
   // Handle list operators (ONE_OF, NOT_ONE_OF)
   if (LIST_OPERATORS.has(operator)) {
-    return evaluateListOperator(operator, contextValue, condition.value, state)
+    return evaluateListOperator(operator, contextValue, condition.value, state);
   }
 
   // For scalar operators, coerce to string and evaluate
-  const contextValueString = String(contextValue)
-  const conditionValueString = resolveScalarConditionValue(
-    condition.value,
-    operator,
-    state.isClientFormat
-  )
+  const contextValueString = String(contextValue);
+  const conditionValueString = resolveScalarConditionValue(condition.value, operator, state.isClientFormat);
 
-  return evaluateOperator(operator, contextValueString, conditionValueString)
+  return evaluateOperator(operator, contextValueString, conditionValueString);
 }
 
 /**
@@ -298,16 +248,16 @@ function matchesCondition(
 function getContextValueForAttribute(
   attribute: string,
   context: EvaluationContext,
-  state: FormatState
+  state: FormatState,
 ): string | number | boolean | readonly string[] | undefined {
   if (state.isClientFormat) {
     // In client format, attribute is an MD5 hash.
     // Look it up in the pre-computed hashed context.
-    return state.hashedContextLookup.get(attribute)
+    return state.hashedContextLookup.get(attribute);
   }
 
   // In server format, attribute is the plain name.
-  return context[attribute]
+  return context[attribute];
 }
 
 /**
@@ -317,29 +267,25 @@ function evaluateListOperator(
   operator: "ONE_OF" | "NOT_ONE_OF" | Operator,
   contextValue: string | number | boolean | readonly string[],
   conditionValue: string | readonly string[],
-  state: FormatState
+  state: FormatState,
 ): boolean {
-  const conditionValues = Array.isArray(conditionValue) ? conditionValue : [conditionValue]
+  const conditionValues = Array.isArray(conditionValue) ? conditionValue : [conditionValue];
 
   // Context value could be a single value or an array
-  const contextValues = Array.isArray(contextValue)
-    ? contextValue.map(String)
-    : [String(contextValue)]
+  const contextValues = Array.isArray(contextValue) ? contextValue.map(String) : [String(contextValue)];
 
   // In client format, hash context values for comparison
-  const comparableContextValues = state.isClientFormat
-    ? contextValues.map((v) => md5(v))
-    : contextValues
+  const comparableContextValues = state.isClientFormat ? contextValues.map((v) => md5(v)) : contextValues;
 
-  const conditionStrings = conditionValues as readonly string[]
+  const conditionStrings = conditionValues as readonly string[];
 
   // ONE_OF: true if ANY context value is in the condition values
   // NOT_ONE_OF: true if NO context value is in the condition values
-  const hasMatch = comparableContextValues.some((cv) => conditionStrings.includes(cv))
+  const hasMatch = comparableContextValues.some((cv) => conditionStrings.includes(cv));
 
-  if (operator === "ONE_OF") return hasMatch
-  if (operator === "NOT_ONE_OF") return !hasMatch
-  return false
+  if (operator === "ONE_OF") return hasMatch;
+  if (operator === "NOT_ONE_OF") return !hasMatch;
+  return false;
 }
 
 /**
@@ -348,24 +294,24 @@ function evaluateListOperator(
 function resolveScalarConditionValue(
   value: string | readonly string[],
   operator: Operator,
-  isClientFormat: boolean
+  isClientFormat: boolean,
 ): string {
-  const raw = Array.isArray(value) ? String(value[0] ?? "") : String(value)
+  const raw = Array.isArray(value) ? String(value[0] ?? "") : String(value);
 
-  if (!isClientFormat) return raw
+  if (!isClientFormat) return raw;
 
   // In client format, equality operators use MD5 hashes (handled separately).
   // Pattern and comparison operators use base64 encoding.
   if (EQUALITY_OPERATORS.has(operator)) {
     // This should not be reached for equality operators (handled by list path)
-    return raw
+    return raw;
   }
 
   if (PATTERN_OPERATORS.has(operator) || COMPARISON_OPERATORS.has(operator)) {
-    return decodeConditionValue(raw)
+    return decodeConditionValue(raw);
   }
 
-  return raw
+  return raw;
 }
 
 // ---------------------------------------------------------------------------
@@ -384,39 +330,39 @@ function resolveServeConfig(
   serve: ServeConfig,
   context: EvaluationContext,
   totalShards: number,
-  isClientFormat: boolean
+  isClientFormat: boolean,
 ): string | undefined {
   if (serve.type === "fixed") {
-    return serve.variationKey
+    return serve.variationKey;
   }
 
-  return resolveRollout(serve, context, totalShards, isClientFormat)
+  return resolveRollout(serve, context, totalShards, isClientFormat);
 }
 
 function resolveRollout(
   rollout: RolloutServeConfig,
   context: EvaluationContext,
   totalShards: number,
-  isClientFormat: boolean
+  isClientFormat: boolean,
 ): string | undefined {
-  const bucketByAttribute = rollout.bucketBy
-  const bucketValue = getBucketValue(bucketByAttribute, context, isClientFormat)
+  const bucketByAttribute = rollout.bucketBy;
+  const bucketValue = getBucketValue(bucketByAttribute, context, isClientFormat);
 
   if (bucketValue === undefined) {
     // If the bucket-by attribute is missing, use the context key
-    const fallbackBucketValue = context.key
-    const bucket = computeBucket(rollout.salt, fallbackBucketValue, totalShards)
-    return findVariationForBucket(rollout, bucket)
+    const fallbackBucketValue = context.key;
+    const bucket = computeBucket(rollout.salt, fallbackBucketValue, totalShards);
+    return findVariationForBucket(rollout, bucket);
   }
 
-  const bucket = computeBucket(rollout.salt, bucketValue, totalShards)
-  return findVariationForBucket(rollout, bucket)
+  const bucket = computeBucket(rollout.salt, bucketValue, totalShards);
+  return findVariationForBucket(rollout, bucket);
 }
 
 function getBucketValue(
   bucketByAttribute: string,
   context: EvaluationContext,
-  isClientFormat: boolean
+  isClientFormat: boolean,
 ): string | undefined {
   if (isClientFormat) {
     // bucketBy is MD5-hashed in client format.
@@ -424,26 +370,26 @@ function getBucketValue(
     // Hash each context key and check.
     for (const key of Object.keys(context)) {
       if (md5(key) === bucketByAttribute) {
-        const value = context[key]
-        return value !== undefined ? String(value) : undefined
+        const value = context[key];
+        return value !== undefined ? String(value) : undefined;
       }
     }
-    return undefined
+    return undefined;
   }
 
-  const value = context[bucketByAttribute]
-  return value !== undefined ? String(value) : undefined
+  const value = context[bucketByAttribute];
+  return value !== undefined ? String(value) : undefined;
 }
 
 function findVariationForBucket(rollout: RolloutServeConfig, bucket: number): string | undefined {
   for (const variation of rollout.variations) {
     for (const range of variation.shardRanges) {
       if (bucket >= range.start && bucket < range.end) {
-        return variation.variationKey
+        return variation.variationKey;
       }
     }
   }
-  return undefined
+  return undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -455,31 +401,31 @@ function findVariationForBucket(rollout: RolloutServeConfig, bucket: number): st
  * In client format, the variation key is base64-encoded and the value is base64(JSON.stringify).
  */
 function resolveVariationValue<T>(flag: Flag, variationKey: string, isClientFormat: boolean): T {
-  const variation = flag.variations[variationKey]
+  const variation = flag.variations[variationKey];
 
   if (!variation) {
-    return undefined as T
+    return undefined as T;
   }
 
   if (isClientFormat) {
-    return decodeVariationValue(variation.value) as T
+    return decodeVariationValue(variation.value) as T;
   }
 
-  return variation.value as T
+  return variation.value as T;
 }
 
 /**
  * Decode a base64-encoded variation key back to plain text.
  */
 function decodeVariationKey(encodedKey: string): string {
-  return base64SafeDecode(encodedKey)
+  return base64SafeDecode(encodedKey);
 }
 
 function base64SafeDecode(value: string): string {
   try {
-    return base64Decode(value)
+    return base64Decode(value);
   } catch {
-    return value
+    return value;
   }
 }
 
@@ -507,7 +453,7 @@ function findPlainFlagKeyForHash(_hash: string): string | undefined {
   // receive pre-evaluated results and don't evaluate prerequisites locally.
   //
   // Server SDKs (which use server-format configs) fully support prerequisites.
-  return undefined
+  return undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -519,7 +465,7 @@ function makeResult<T>(
   variationKey: string | undefined,
   reason: EvaluationDetail["reason"],
   ruleId: string | undefined,
-  errorMessage: string | undefined
+  errorMessage: string | undefined,
 ): EvaluationDetail<T> {
-  return { value, variationKey, reason, ruleId, errorMessage }
+  return { value, variationKey, reason, ruleId, errorMessage };
 }

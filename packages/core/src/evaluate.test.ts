@@ -1,17 +1,13 @@
-import { describe, expect, it } from "vitest"
-
-import { evaluateAllFlags, evaluateFlag } from "./evaluate.js"
-import { compileClientConfig } from "./obfuscate.js"
-import type { ConfigBlob, EvaluationContext, EvaluationDetail, Flag, Segment } from "./types.js"
+import { describe, expect, it } from "vitest";
+import { evaluateAllFlags, evaluateFlag } from "./evaluate.js";
+import { compileClientConfig } from "./obfuscate.js";
+import type { ConfigBlob, EvaluationContext, Flag, Segment } from "./types.js";
 
 // ---------------------------------------------------------------------------
 // Test helpers
 // ---------------------------------------------------------------------------
 
-function makeServerConfig(
-  flags: Record<string, Flag>,
-  segments?: Record<string, Segment>
-): ConfigBlob {
+function makeServerConfig(flags: Record<string, Flag>, segments?: Record<string, Segment>): ConfigBlob {
   return {
     formatVersion: 1,
     format: "server",
@@ -21,7 +17,7 @@ function makeServerConfig(
     totalShards: 10_000,
     segments: segments ?? {},
     flags,
-  }
+  };
 }
 
 const defaultContext: EvaluationContext = {
@@ -29,7 +25,7 @@ const defaultContext: EvaluationContext = {
   email: "alice@langchain.dev",
   plan: "enterprise",
   country: "US",
-}
+};
 
 // ---------------------------------------------------------------------------
 // Flag not found
@@ -37,14 +33,14 @@ const defaultContext: EvaluationContext = {
 
 describe("evaluateFlag — flag not found", () => {
   it("returns default value with DEFAULT reason", () => {
-    const config = makeServerConfig({})
-    const result = evaluateFlag(config, "nonexistent", defaultContext, false)
+    const config = makeServerConfig({});
+    const result = evaluateFlag(config, "nonexistent", defaultContext, false);
 
-    expect(result.value).toBe(false)
-    expect(result.reason).toBe("DEFAULT")
-    expect(result.variationKey).toBeUndefined()
-  })
-})
+    expect(result.value).toBe(false);
+    expect(result.reason).toBe("DEFAULT");
+    expect(result.variationKey).toBeUndefined();
+  });
+});
 
 // ---------------------------------------------------------------------------
 // Flag disabled
@@ -66,15 +62,15 @@ describe("evaluateFlag — flag disabled", () => {
         rules: [],
         fallthrough: { type: "fixed", variationKey: "on" },
       },
-    })
+    });
 
-    const result = evaluateFlag(config, "my-flag", defaultContext, true)
+    const result = evaluateFlag(config, "my-flag", defaultContext, true);
 
-    expect(result.value).toBe(false)
-    expect(result.variationKey).toBe("off")
-    expect(result.reason).toBe("OFF")
-  })
-})
+    expect(result.value).toBe(false);
+    expect(result.variationKey).toBe("off");
+    expect(result.reason).toBe("OFF");
+  });
+});
 
 // ---------------------------------------------------------------------------
 // Individual targets
@@ -96,12 +92,12 @@ describe("evaluateFlag — individual targets", () => {
         rules: [],
         fallthrough: { type: "fixed", variationKey: "off" },
       },
-    })
+    });
 
-    const result = evaluateFlag(config, "my-flag", defaultContext, false)
-    expect(result.value).toBe(true)
-    expect(result.reason).toBe("INDIVIDUAL_TARGET")
-  })
+    const result = evaluateFlag(config, "my-flag", defaultContext, false);
+    expect(result.value).toBe(true);
+    expect(result.reason).toBe("INDIVIDUAL_TARGET");
+  });
 
   it("does not match non-targeted context key", () => {
     const config = makeServerConfig({
@@ -118,13 +114,13 @@ describe("evaluateFlag — individual targets", () => {
         rules: [],
         fallthrough: { type: "fixed", variationKey: "off" },
       },
-    })
+    });
 
-    const result = evaluateFlag(config, "my-flag", defaultContext, false)
-    expect(result.value).toBe(false)
-    expect(result.reason).toBe("FALLTHROUGH")
-  })
-})
+    const result = evaluateFlag(config, "my-flag", defaultContext, false);
+    expect(result.value).toBe(false);
+    expect(result.reason).toBe("FALLTHROUGH");
+  });
+});
 
 // ---------------------------------------------------------------------------
 // Targeting rules — attribute conditions
@@ -157,13 +153,13 @@ describe("evaluateFlag — attribute targeting rules", () => {
         ],
         fallthrough: { type: "fixed", variationKey: "standard" },
       },
-    })
+    });
 
-    const result = evaluateFlag(config, "my-flag", defaultContext, "standard-features")
-    expect(result.value).toBe("enterprise-features")
-    expect(result.reason).toBe("RULE_MATCH")
-    expect(result.ruleId).toBe("rule-1")
-  })
+    const result = evaluateFlag(config, "my-flag", defaultContext, "standard-features");
+    expect(result.value).toBe("enterprise-features");
+    expect(result.reason).toBe("RULE_MATCH");
+    expect(result.ruleId).toBe("rule-1");
+  });
 
   it("matches ONE_OF operator", () => {
     const config = makeServerConfig({
@@ -192,12 +188,12 @@ describe("evaluateFlag — attribute targeting rules", () => {
         ],
         fallthrough: { type: "fixed", variationKey: "off" },
       },
-    })
+    });
 
-    const result = evaluateFlag(config, "my-flag", defaultContext, false)
-    expect(result.value).toBe(true)
-    expect(result.reason).toBe("RULE_MATCH")
-  })
+    const result = evaluateFlag(config, "my-flag", defaultContext, false);
+    expect(result.value).toBe(true);
+    expect(result.reason).toBe("RULE_MATCH");
+  });
 
   it("matches ENDS_WITH operator (email domain targeting)", () => {
     const config = makeServerConfig({
@@ -226,16 +222,16 @@ describe("evaluateFlag — attribute targeting rules", () => {
         ],
         fallthrough: { type: "fixed", variationKey: "off" },
       },
-    })
+    });
 
-    const result = evaluateFlag(config, "my-flag", defaultContext, false)
-    expect(result.value).toBe(true)
+    const result = evaluateFlag(config, "my-flag", defaultContext, false);
+    expect(result.value).toBe(true);
 
-    const otherUser: EvaluationContext = { key: "user-789", email: "bob@gmail.com" }
-    const otherResult = evaluateFlag(config, "my-flag", otherUser, false)
-    expect(otherResult.value).toBe(false)
-    expect(otherResult.reason).toBe("FALLTHROUGH")
-  })
+    const otherUser: EvaluationContext = { key: "user-789", email: "bob@gmail.com" };
+    const otherResult = evaluateFlag(config, "my-flag", otherUser, false);
+    expect(otherResult.value).toBe(false);
+    expect(otherResult.reason).toBe("FALLTHROUGH");
+  });
 
   it("matches MATCHES operator (regex)", () => {
     const config = makeServerConfig({
@@ -264,11 +260,11 @@ describe("evaluateFlag — attribute targeting rules", () => {
         ],
         fallthrough: { type: "fixed", variationKey: "off" },
       },
-    })
+    });
 
-    const result = evaluateFlag(config, "my-flag", defaultContext, false)
-    expect(result.value).toBe(true)
-  })
+    const result = evaluateFlag(config, "my-flag", defaultContext, false);
+    expect(result.value).toBe(true);
+  });
 
   it("first matching rule wins", () => {
     const config = makeServerConfig({
@@ -311,13 +307,13 @@ describe("evaluateFlag — attribute targeting rules", () => {
         ],
         fallthrough: { type: "fixed", variationKey: "standard" },
       },
-    })
+    });
 
     // Matches both rules, but first one wins
-    const result = evaluateFlag(config, "my-flag", defaultContext, "standard")
-    expect(result.value).toBe("vip")
-    expect(result.ruleId).toBe("rule-vip")
-  })
+    const result = evaluateFlag(config, "my-flag", defaultContext, "standard");
+    expect(result.value).toBe("vip");
+    expect(result.ruleId).toBe("rule-vip");
+  });
 
   it("AND logic within a rule (all conditions must match)", () => {
     const config = makeServerConfig({
@@ -346,18 +342,18 @@ describe("evaluateFlag — attribute targeting rules", () => {
         ],
         fallthrough: { type: "fixed", variationKey: "off" },
       },
-    })
+    });
 
     // Matches both conditions
-    const result = evaluateFlag(config, "my-flag", defaultContext, false)
-    expect(result.value).toBe(true)
+    const result = evaluateFlag(config, "my-flag", defaultContext, false);
+    expect(result.value).toBe(true);
 
     // Only matches one condition
-    const ukUser: EvaluationContext = { key: "uk-user", plan: "enterprise", country: "GB" }
-    const ukResult = evaluateFlag(config, "my-flag", ukUser, false)
-    expect(ukResult.value).toBe(false)
-  })
-})
+    const ukUser: EvaluationContext = { key: "uk-user", plan: "enterprise", country: "GB" };
+    const ukResult = evaluateFlag(config, "my-flag", ukUser, false);
+    expect(ukResult.value).toBe(false);
+  });
+});
 
 // ---------------------------------------------------------------------------
 // Segment targeting
@@ -392,13 +388,13 @@ describe("evaluateFlag — segment targeting", () => {
             },
           ],
         },
-      }
-    )
+      },
+    );
 
-    const result = evaluateFlag(config, "my-flag", defaultContext, false)
-    expect(result.value).toBe(true)
-    expect(result.reason).toBe("RULE_MATCH")
-  })
+    const result = evaluateFlag(config, "my-flag", defaultContext, false);
+    expect(result.value).toBe(true);
+    expect(result.reason).toBe("RULE_MATCH");
+  });
 
   it("segment rules are OR'd (any rule match = segment match)", () => {
     const config = makeServerConfig(
@@ -431,34 +427,34 @@ describe("evaluateFlag — segment targeting", () => {
             },
           ],
         },
-      }
-    )
+      },
+    );
 
     // Matches via plan rule
     const enterpriseUser: EvaluationContext = {
       key: "user-1",
       plan: "enterprise",
       email: "bob@other.com",
-    }
-    expect(evaluateFlag(config, "my-flag", enterpriseUser, false).value).toBe(true)
+    };
+    expect(evaluateFlag(config, "my-flag", enterpriseUser, false).value).toBe(true);
 
     // Matches via email rule
     const langchainUser: EvaluationContext = {
       key: "user-2",
       plan: "free",
       email: "alice@langchain.dev",
-    }
-    expect(evaluateFlag(config, "my-flag", langchainUser, false).value).toBe(true)
+    };
+    expect(evaluateFlag(config, "my-flag", langchainUser, false).value).toBe(true);
 
     // Matches neither
     const freeUser: EvaluationContext = {
       key: "user-3",
       plan: "free",
       email: "charlie@gmail.com",
-    }
-    expect(evaluateFlag(config, "my-flag", freeUser, false).value).toBe(false)
-  })
-})
+    };
+    expect(evaluateFlag(config, "my-flag", freeUser, false).value).toBe(false);
+  });
+});
 
 // ---------------------------------------------------------------------------
 // Percentage rollouts
@@ -485,14 +481,14 @@ describe("evaluateFlag — percentage rollouts", () => {
           ],
         },
       },
-    })
+    });
 
     // Verify determinism: same user always gets same result
-    const result1 = evaluateFlag(config, "my-flag", defaultContext, false)
-    const result2 = evaluateFlag(config, "my-flag", defaultContext, false)
-    expect(result1.value).toBe(result2.value)
-    expect(result1.reason).toBe("FALLTHROUGH")
-  })
+    const result1 = evaluateFlag(config, "my-flag", defaultContext, false);
+    const result2 = evaluateFlag(config, "my-flag", defaultContext, false);
+    expect(result1.value).toBe(result2.value);
+    expect(result1.reason).toBe("FALLTHROUGH");
+  });
 
   it("distributes roughly according to weights", () => {
     const config = makeServerConfig({
@@ -514,21 +510,21 @@ describe("evaluateFlag — percentage rollouts", () => {
           ],
         },
       },
-    })
+    });
 
-    let onCount = 0
-    const total = 1000
+    let onCount = 0;
+    const total = 1000;
     for (let i = 0; i < total; i++) {
-      const ctx: EvaluationContext = { key: `user-${i}` }
-      const result = evaluateFlag(config, "my-flag", ctx, false)
-      if (result.value === true) onCount++
+      const ctx: EvaluationContext = { key: `user-${i}` };
+      const result = evaluateFlag(config, "my-flag", ctx, false);
+      if (result.value === true) onCount++;
     }
 
     // 50% rollout should give roughly 50% on. Allow wide margin for small sample.
-    expect(onCount).toBeGreaterThan(total * 0.35)
-    expect(onCount).toBeLessThan(total * 0.65)
-  })
-})
+    expect(onCount).toBeGreaterThan(total * 0.35);
+    expect(onCount).toBeLessThan(total * 0.65);
+  });
+});
 
 // ---------------------------------------------------------------------------
 // Prerequisites
@@ -557,13 +553,13 @@ describe("evaluateFlag — prerequisites", () => {
         rules: [],
         fallthrough: { type: "fixed", variationKey: "on" },
       },
-    })
+    });
 
     // platform-v2 resolves to "off", so prerequisite fails
-    const result = evaluateFlag(config, "new-dashboard", defaultContext, false)
-    expect(result.value).toBe(false)
-    expect(result.reason).toBe("PREREQUISITE_FAILED")
-  })
+    const result = evaluateFlag(config, "new-dashboard", defaultContext, false);
+    expect(result.value).toBe(false);
+    expect(result.reason).toBe("PREREQUISITE_FAILED");
+  });
 
   it("evaluates normally when prerequisite passes", () => {
     const config = makeServerConfig({
@@ -587,13 +583,13 @@ describe("evaluateFlag — prerequisites", () => {
         rules: [],
         fallthrough: { type: "fixed", variationKey: "on" },
       },
-    })
+    });
 
-    const result = evaluateFlag(config, "new-dashboard", defaultContext, false)
-    expect(result.value).toBe(true)
-    expect(result.reason).toBe("FALLTHROUGH")
-  })
-})
+    const result = evaluateFlag(config, "new-dashboard", defaultContext, false);
+    expect(result.value).toBe(true);
+    expect(result.reason).toBe("FALLTHROUGH");
+  });
+});
 
 // ---------------------------------------------------------------------------
 // Multivariate flags (string, number, JSON)
@@ -615,11 +611,11 @@ describe("evaluateFlag — multivariate flags", () => {
         rules: [],
         fallthrough: { type: "fixed", variationKey: "treatment" },
       },
-    })
+    });
 
-    const result = evaluateFlag(config, "checkout-flow", defaultContext, "one-page")
-    expect(result.value).toBe("multi-step")
-  })
+    const result = evaluateFlag(config, "checkout-flow", defaultContext, "one-page");
+    expect(result.value).toBe("multi-step");
+  });
 
   it("evaluates number flags", () => {
     const config = makeServerConfig({
@@ -648,11 +644,11 @@ describe("evaluateFlag — multivariate flags", () => {
         ],
         fallthrough: { type: "fixed", variationKey: "medium" },
       },
-    })
+    });
 
-    const result = evaluateFlag(config, "rate-limit", defaultContext, 100)
-    expect(result.value).toBe(2000)
-  })
+    const result = evaluateFlag(config, "rate-limit", defaultContext, 100);
+    expect(result.value).toBe(2000);
+  });
 
   it("evaluates JSON flags", () => {
     const config = makeServerConfig({
@@ -669,12 +665,12 @@ describe("evaluateFlag — multivariate flags", () => {
         rules: [],
         fallthrough: { type: "fixed", variationKey: "compact" },
       },
-    })
+    });
 
-    const result = evaluateFlag(config, "ui-config", defaultContext, { theme: "light" })
-    expect(result.value).toEqual({ theme: "dark", sidebar: false })
-  })
-})
+    const result = evaluateFlag(config, "ui-config", defaultContext, { theme: "light" });
+    expect(result.value).toEqual({ theme: "dark", sidebar: false });
+  });
+});
 
 // ---------------------------------------------------------------------------
 // evaluateAllFlags
@@ -703,13 +699,13 @@ describe("evaluateAllFlags", () => {
         rules: [],
         fallthrough: { type: "fixed", variationKey: "v2" },
       },
-    })
+    });
 
-    const results = evaluateAllFlags(config, defaultContext)
-    expect(results.get("flag-a")).toBe(true)
-    expect(results.get("flag-b")).toBe("old") // disabled → offVariation
-  })
-})
+    const results = evaluateAllFlags(config, defaultContext);
+    expect(results.get("flag-a")).toBe(true);
+    expect(results.get("flag-b")).toBe("old"); // disabled → offVariation
+  });
+});
 
 // ---------------------------------------------------------------------------
 // Client format (obfuscated) evaluation
@@ -765,46 +761,46 @@ describe("evaluateFlag — client format", () => {
           },
         ],
       },
-    }
-  )
+    },
+  );
 
-  const clientConfig = compileClientConfig(serverConfig)
+  const clientConfig = compileClientConfig(serverConfig);
 
   it("compiles to client format", () => {
-    expect(clientConfig.format).toBe("client")
-    expect(Object.keys(clientConfig.flags)).toHaveLength(1)
+    expect(clientConfig.format).toBe("client");
+    expect(Object.keys(clientConfig.flags)).toHaveLength(1);
     // Flag key should be MD5 hashed
-    const flagKeys = Object.keys(clientConfig.flags)
-    expect(flagKeys[0]).toMatch(/^[0-9a-f]{32}$/)
-  })
+    const flagKeys = Object.keys(clientConfig.flags);
+    expect(flagKeys[0]).toMatch(/^[0-9a-f]{32}$/);
+  });
 
   it("evaluates correctly in client format — individual target", () => {
-    const ceoContext: EvaluationContext = { key: "user-ceo", email: "ceo@company.com" }
-    const result = evaluateFlag(clientConfig, "show-new-dashboard", ceoContext, false)
-    expect(result.value).toBe(true)
-    expect(result.reason).toBe("INDIVIDUAL_TARGET")
-  })
+    const ceoContext: EvaluationContext = { key: "user-ceo", email: "ceo@company.com" };
+    const result = evaluateFlag(clientConfig, "show-new-dashboard", ceoContext, false);
+    expect(result.value).toBe(true);
+    expect(result.reason).toBe("INDIVIDUAL_TARGET");
+  });
 
   it("evaluates correctly in client format — segment match", () => {
-    const result = evaluateFlag(clientConfig, "show-new-dashboard", defaultContext, false)
-    expect(result.value).toBe(true)
-    expect(result.reason).toBe("RULE_MATCH")
-  })
+    const result = evaluateFlag(clientConfig, "show-new-dashboard", defaultContext, false);
+    expect(result.value).toBe(true);
+    expect(result.reason).toBe("RULE_MATCH");
+  });
 
   it("evaluates correctly in client format — ONE_OF with rollout", () => {
-    const usUser: EvaluationContext = { key: "user-555", country: "US", email: "x@gmail.com" }
-    const result = evaluateFlag(clientConfig, "show-new-dashboard", usUser, false)
+    const usUser: EvaluationContext = { key: "user-555", country: "US", email: "x@gmail.com" };
+    const result = evaluateFlag(clientConfig, "show-new-dashboard", usUser, false);
     // Should get a result (either on or off) via rollout
-    expect(result.reason).toBe("RULE_MATCH")
-    expect(typeof result.value).toBe("boolean")
-  })
+    expect(result.reason).toBe("RULE_MATCH");
+    expect(typeof result.value).toBe("boolean");
+  });
 
   it("evaluates correctly in client format — fallthrough", () => {
-    const jpUser: EvaluationContext = { key: "user-jp", country: "JP", email: "taro@japan.com" }
-    const result = evaluateFlag(clientConfig, "show-new-dashboard", jpUser, false)
-    expect(result.value).toBe(false)
-    expect(result.reason).toBe("FALLTHROUGH")
-  })
+    const jpUser: EvaluationContext = { key: "user-jp", country: "JP", email: "taro@japan.com" };
+    const result = evaluateFlag(clientConfig, "show-new-dashboard", jpUser, false);
+    expect(result.value).toBe(false);
+    expect(result.reason).toBe("FALLTHROUGH");
+  });
 
   it("server and client format produce same results", () => {
     const contexts: EvaluationContext[] = [
@@ -812,17 +808,17 @@ describe("evaluateFlag — client format", () => {
       { key: "user-123", email: "alice@langchain.dev", country: "US" },
       { key: "user-jp", country: "JP", email: "taro@japan.com" },
       { key: "user-free", plan: "free", country: "US", email: "free@gmail.com" },
-    ]
+    ];
 
     for (const ctx of contexts) {
-      const serverResult = evaluateFlag(serverConfig, "show-new-dashboard", ctx, false)
-      const clientResult = evaluateFlag(clientConfig, "show-new-dashboard", ctx, false)
+      const serverResult = evaluateFlag(serverConfig, "show-new-dashboard", ctx, false);
+      const clientResult = evaluateFlag(clientConfig, "show-new-dashboard", ctx, false);
 
-      expect(clientResult.value).toBe(serverResult.value)
-      expect(clientResult.reason).toBe(serverResult.reason)
+      expect(clientResult.value).toBe(serverResult.value);
+      expect(clientResult.reason).toBe(serverResult.reason);
     }
-  })
-})
+  });
+});
 
 // ---------------------------------------------------------------------------
 // Edge cases
@@ -856,12 +852,12 @@ describe("evaluateFlag — edge cases", () => {
         ],
         fallthrough: { type: "fixed", variationKey: "off" },
       },
-    })
+    });
 
-    const result = evaluateFlag(config, "my-flag", defaultContext, false)
-    expect(result.value).toBe(false)
-    expect(result.reason).toBe("FALLTHROUGH")
-  })
+    const result = evaluateFlag(config, "my-flag", defaultContext, false);
+    expect(result.value).toBe(false);
+    expect(result.reason).toBe("FALLTHROUGH");
+  });
 
   it("handles empty rules array", () => {
     const config = makeServerConfig({
@@ -875,12 +871,12 @@ describe("evaluateFlag — edge cases", () => {
         rules: [],
         fallthrough: { type: "fixed", variationKey: "on" },
       },
-    })
+    });
 
-    const result = evaluateFlag(config, "my-flag", defaultContext, false)
-    expect(result.value).toBe(true)
-    expect(result.reason).toBe("FALLTHROUGH")
-  })
+    const result = evaluateFlag(config, "my-flag", defaultContext, false);
+    expect(result.value).toBe(true);
+    expect(result.reason).toBe("FALLTHROUGH");
+  });
 
   it("handles NOT_ONE_OF operator", () => {
     const config = makeServerConfig({
@@ -909,12 +905,12 @@ describe("evaluateFlag — edge cases", () => {
         ],
         fallthrough: { type: "fixed", variationKey: "off" },
       },
-    })
+    });
 
     // US is NOT in [CN, RU], so rule matches
-    const result = evaluateFlag(config, "my-flag", defaultContext, false)
-    expect(result.value).toBe(true)
-  })
+    const result = evaluateFlag(config, "my-flag", defaultContext, false);
+    expect(result.value).toBe(true);
+  });
 
   it("handles numeric comparison operators", () => {
     const config = makeServerConfig({
@@ -939,12 +935,12 @@ describe("evaluateFlag — edge cases", () => {
         ],
         fallthrough: { type: "fixed", variationKey: "off" },
       },
-    })
+    });
 
-    const adultUser: EvaluationContext = { key: "user-1", age: 25 }
-    expect(evaluateFlag(config, "my-flag", adultUser, false).value).toBe(true)
+    const adultUser: EvaluationContext = { key: "user-1", age: 25 };
+    expect(evaluateFlag(config, "my-flag", adultUser, false).value).toBe(true);
 
-    const minorUser: EvaluationContext = { key: "user-2", age: 16 }
-    expect(evaluateFlag(config, "my-flag", minorUser, false).value).toBe(false)
-  })
-})
+    const minorUser: EvaluationContext = { key: "user-2", age: 16 };
+    expect(evaluateFlag(config, "my-flag", minorUser, false).value).toBe(false);
+  });
+});

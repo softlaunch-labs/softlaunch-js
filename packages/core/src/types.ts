@@ -21,92 +21,92 @@
 // ---------------------------------------------------------------------------
 
 /** Current format version. SDKs must reject configs with unknown versions. */
-export const CURRENT_FORMAT_VERSION = 1
+export const CURRENT_FORMAT_VERSION = 1;
 
 // ---------------------------------------------------------------------------
 // Config blob — top-level structure
 // ---------------------------------------------------------------------------
 
-export type ConfigFormat = "server" | "client"
+export type ConfigFormat = "server" | "client";
 
 export interface ConfigBlob {
   /** Schema version. SDKs reject configs with `formatVersion > CURRENT_FORMAT_VERSION`. */
-  readonly formatVersion: number
+  readonly formatVersion: number;
 
   /** Whether keys/values are plain text ("server") or obfuscated ("client"). */
-  readonly format: ConfigFormat
+  readonly format: ConfigFormat;
 
   /** Environment key this config was compiled for (plain text in both formats). */
-  readonly environment: string
+  readonly environment: string;
 
   /** Monotonically increasing version. Higher = newer. */
-  readonly version: number
+  readonly version: number;
 
   /** Unix ms timestamp of when this blob was generated. */
-  readonly generatedAt: number
+  readonly generatedAt: number;
 
   /**
    * Total number of shards for percentage rollouts.
    * All shard ranges in this config are in [0, totalShards).
    * Default: 10_000 (0.01% granularity).
    */
-  readonly totalShards: number
+  readonly totalShards: number;
 
   /** Reusable segment definitions, keyed by segment key (or MD5 hash in client format). */
-  readonly segments: Readonly<Record<string, Segment>>
+  readonly segments: Readonly<Record<string, Segment>>;
 
   /** Flag definitions, keyed by flag key (or MD5 hash in client format). */
-  readonly flags: Readonly<Record<string, Flag>>
+  readonly flags: Readonly<Record<string, Flag>>;
 }
 
 // ---------------------------------------------------------------------------
 // Flags
 // ---------------------------------------------------------------------------
 
-export type FlagType = "boolean" | "string" | "number" | "json"
+export type FlagType = "boolean" | "string" | "number" | "json";
 
 export interface Flag {
   /**
    * Value type. In client format this is base64-encoded.
    * Determines how variation values are interpreted.
    */
-  readonly type: string
+  readonly type: string;
 
   /** Whether this flag is currently enabled for this environment. */
-  readonly enabled: boolean
+  readonly enabled: boolean;
 
   /**
    * Variation definitions.
    * Key = variation key (or base64 in client format).
    * Value = the actual value to return (or base64/encoded in client format).
    */
-  readonly variations: Readonly<Record<string, FlagVariation>>
+  readonly variations: Readonly<Record<string, FlagVariation>>;
 
   /** Variation key to return when the flag is disabled. */
-  readonly offVariation: string
+  readonly offVariation: string;
 
   /** Flags that must evaluate to specific variations before this flag is evaluated. */
-  readonly prerequisites: readonly Prerequisite[]
+  readonly prerequisites: readonly Prerequisite[];
 
   /**
    * Explicit context-key → variation assignments.
    * Evaluated before rules. First match wins.
    */
-  readonly individualTargets: readonly IndividualTarget[]
+  readonly individualTargets: readonly IndividualTarget[];
 
   /**
    * Targeting rules, evaluated top-to-bottom. First matching rule wins.
    * If no rules match, `fallthrough` is used.
    */
-  readonly rules: readonly TargetingRule[]
+  readonly rules: readonly TargetingRule[];
 
   /** Serve config used when no rules match. */
-  readonly fallthrough: ServeConfig
+  readonly fallthrough: ServeConfig;
 }
 
 export interface FlagVariation {
   /** The value to return. Type depends on `Flag.type`. */
-  readonly value: unknown
+  readonly value: unknown;
 }
 
 // ---------------------------------------------------------------------------
@@ -115,10 +115,10 @@ export interface FlagVariation {
 
 export interface Prerequisite {
   /** Flag key (or MD5 hash in client format) that must be evaluated first. */
-  readonly flagKey: string
+  readonly flagKey: string;
 
   /** The prerequisite flag must resolve to this variation key. */
-  readonly variationKey: string
+  readonly variationKey: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -127,13 +127,13 @@ export interface Prerequisite {
 
 export interface IndividualTarget {
   /** Variation key to serve for matched context keys. */
-  readonly variationKey: string
+  readonly variationKey: string;
 
   /**
    * Context keys (the `key` field of the evaluation context) that receive
    * this variation. In client format these are MD5-hashed.
    */
-  readonly contextKeys: readonly string[]
+  readonly contextKeys: readonly string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -142,32 +142,32 @@ export interface IndividualTarget {
 
 export interface TargetingRule {
   /** Stable identifier for this rule (for audit/debug). */
-  readonly id: string
+  readonly id: string;
 
   /**
    * Conditions that must ALL be true for this rule to match (AND logic).
    * Each condition is either a segment membership check or an attribute condition.
    */
-  readonly conditions: readonly RuleCondition[]
+  readonly conditions: readonly RuleCondition[];
 
   /** What to serve when this rule matches. */
-  readonly serve: ServeConfig
+  readonly serve: ServeConfig;
 }
 
-export type RuleCondition = SegmentCondition | AttributeCondition
+export type RuleCondition = SegmentCondition | AttributeCondition;
 
 export interface SegmentCondition {
-  readonly type: "segment"
+  readonly type: "segment";
 
   /** Segment key (or MD5 hash in client format). */
-  readonly segmentKey: string
+  readonly segmentKey: string;
 }
 
 export interface AttributeCondition {
-  readonly type: "attribute"
+  readonly type: "attribute";
 
   /** The attribute condition to evaluate. */
-  readonly condition: Condition
+  readonly condition: Condition;
 }
 
 // ---------------------------------------------------------------------------
@@ -179,13 +179,13 @@ export interface Condition {
    * Context attribute name to evaluate (or MD5 hash in client format).
    * Matched against keys in the evaluation context.
    */
-  readonly attribute: string
+  readonly attribute: string;
 
   /**
    * Operator identifier. In server format this is a plain `Operator` string.
    * In client format this is the MD5 hash of the operator name.
    */
-  readonly operator: string
+  readonly operator: string;
 
   /**
    * Value(s) to compare against. Shape depends on operator:
@@ -200,7 +200,7 @@ export interface Condition {
    * - Pattern operators (CONTAINS, STARTS_WITH, ENDS_WITH, MATCHES): `string`
    *   In client format: base64-encoded (must be decoded before evaluation).
    */
-  readonly value: string | readonly string[]
+  readonly value: string | readonly string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -245,21 +245,21 @@ export const OPERATORS = [
   // Date/time comparison (ISO 8601 strings or unix ms)
   "BEFORE",
   "AFTER",
-] as const
+] as const;
 
-export type Operator = (typeof OPERATORS)[number]
+export type Operator = (typeof OPERATORS)[number];
 
 /**
  * Operators that compare a context value against a list of values.
  * In client format, values are individually hashed.
  */
-export const LIST_OPERATORS: ReadonlySet<Operator> = new Set(["ONE_OF", "NOT_ONE_OF"])
+export const LIST_OPERATORS: ReadonlySet<Operator> = new Set(["ONE_OF", "NOT_ONE_OF"]);
 
 /**
  * Operators that compare a context value against a single hashed value.
  * In client format, both the stored value and the context value are hashed.
  */
-export const EQUALITY_OPERATORS: ReadonlySet<Operator> = new Set(["IS", "IS_NOT"])
+export const EQUALITY_OPERATORS: ReadonlySet<Operator> = new Set(["IS", "IS_NOT"]);
 
 /**
  * Operators where the stored value is a pattern (string or regex).
@@ -272,7 +272,7 @@ export const PATTERN_OPERATORS: ReadonlySet<Operator> = new Set([
   "STARTS_WITH",
   "ENDS_WITH",
   "MATCHES",
-])
+]);
 
 /**
  * Operators where the stored value is a comparable scalar (number, date, semver).
@@ -290,59 +290,59 @@ export const COMPARISON_OPERATORS: ReadonlySet<Operator> = new Set([
   "SEMVER_LTE",
   "BEFORE",
   "AFTER",
-])
+]);
 
 // ---------------------------------------------------------------------------
 // Serve config (what to return when a rule matches)
 // ---------------------------------------------------------------------------
 
-export type ServeConfig = FixedServeConfig | RolloutServeConfig
+export type ServeConfig = FixedServeConfig | RolloutServeConfig;
 
 export interface FixedServeConfig {
-  readonly type: "fixed"
+  readonly type: "fixed";
 
   /** Variation key to serve. */
-  readonly variationKey: string
+  readonly variationKey: string;
 }
 
 export interface RolloutServeConfig {
-  readonly type: "rollout"
+  readonly type: "rollout";
 
   /**
    * Which context attribute to hash for bucket assignment.
    * Defaults to "key" (the context's stable identifier).
    */
-  readonly bucketBy: string
+  readonly bucketBy: string;
 
   /**
    * Salt for this specific rollout. Ensures different flags/rules
    * produce independent bucket assignments for the same user.
    * Typically: `${flagKey}-${ruleId}`.
    */
-  readonly salt: string
+  readonly salt: string;
 
   /**
    * Variations with their shard range assignments.
    * Shard ranges are in [0, totalShards) and must not overlap.
    * Gaps in coverage mean "no assignment" (fallthrough to next rule or default).
    */
-  readonly variations: readonly RolloutVariation[]
+  readonly variations: readonly RolloutVariation[];
 }
 
 export interface RolloutVariation {
   /** Variation key to serve if the bucket falls in any of the shard ranges. */
-  readonly variationKey: string
+  readonly variationKey: string;
 
   /** Shard ranges this variation occupies. Ranges are [start, end). */
-  readonly shardRanges: readonly ShardRange[]
+  readonly shardRanges: readonly ShardRange[];
 }
 
 export interface ShardRange {
   /** Inclusive start of the range. */
-  readonly start: number
+  readonly start: number;
 
   /** Exclusive end of the range. */
-  readonly end: number
+  readonly end: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -354,11 +354,11 @@ export interface Segment {
    * Rules are OR'd together: a context matches the segment if it matches
    * ANY rule. Within each rule, conditions are AND'd.
    */
-  readonly rules: readonly SegmentRule[]
+  readonly rules: readonly SegmentRule[];
 }
 
 export interface SegmentRule {
-  readonly conditions: readonly Condition[]
+  readonly conditions: readonly Condition[];
 }
 
 // ---------------------------------------------------------------------------
@@ -372,14 +372,14 @@ export interface SegmentRule {
  */
 export interface EvaluationContext {
   /** Stable identifier for this evaluation subject. Required. */
-  readonly key: string
+  readonly key: string;
 
   /**
    * Additional attributes used for targeting.
    * Keys are attribute names, values are attribute values.
    * Undefined values are treated as "attribute not present".
    */
-  readonly [attribute: string]: string | number | boolean | readonly string[] | undefined
+  readonly [attribute: string]: string | number | boolean | readonly string[] | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -396,21 +396,21 @@ export type EvaluationReason =
   | "RULE_MATCH"
   | "FALLTHROUGH"
   | "DEFAULT"
-  | "ERROR"
+  | "ERROR";
 
 export interface EvaluationDetail<T = unknown> {
   /** The resolved flag value. */
-  readonly value: T
+  readonly value: T;
 
   /** The variation key that was selected, if any. */
-  readonly variationKey: string | undefined
+  readonly variationKey: string | undefined;
 
   /** Why this particular value was selected. */
-  readonly reason: EvaluationReason
+  readonly reason: EvaluationReason;
 
   /** The ID of the matched targeting rule, if reason is "RULE_MATCH". */
-  readonly ruleId: string | undefined
+  readonly ruleId: string | undefined;
 
   /** Error message, if reason is "ERROR". */
-  readonly errorMessage: string | undefined
+  readonly errorMessage: string | undefined;
 }
