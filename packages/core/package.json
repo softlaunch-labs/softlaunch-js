@@ -40,8 +40,8 @@
   },
   "devDependencies": {
     "@workspace/typescript-config": "workspace:*",
-    "tsup": "8.4.0",
+    "tsup": "^8.4.0",
     "typescript": "5.9.3",
-    "vitest": "3.1.1"
+    "vitest": "^3.1.1"
   }
 }
