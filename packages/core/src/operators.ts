@@ -10,7 +10,7 @@
  * here. Numeric and date comparisons parse the string representations.
  */
 
-import type { Operator } from "./types.js";
+import type { Operator } from "./types";
 
 /**
  * Evaluate a single operator against a context value and condition value.

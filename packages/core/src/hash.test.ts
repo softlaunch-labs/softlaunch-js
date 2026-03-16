@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { base64Decode, base64Encode, computeBucket, md5 } from "./hash.js";
+import { base64Decode, base64Encode, computeBucket, md5 } from "./hash";
 
 describe("md5", () => {
   it("hashes empty string", () => {

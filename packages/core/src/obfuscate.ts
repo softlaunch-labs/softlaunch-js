@@ -28,8 +28,8 @@
  * flag names, targeting rules, and user segments via DevTools.
  */
 
-import { base64Decode, base64Encode, md5 } from "./hash.js";
-import { COMPARISON_OPERATORS, EQUALITY_OPERATORS, LIST_OPERATORS, OPERATORS, PATTERN_OPERATORS } from "./types.js";
+import { base64Decode, base64Encode, md5 } from "./hash";
+import { COMPARISON_OPERATORS, EQUALITY_OPERATORS, LIST_OPERATORS, OPERATORS, PATTERN_OPERATORS } from "./types";
 import type {
   AttributeCondition,
   Condition,
@@ -48,7 +48,7 @@ import type {
   SegmentRule,
   ServeConfig,
   TargetingRule,
-} from "./types.js";
+} from "./types";
 
 // ---------------------------------------------------------------------------
 // Operator hash lookup — built once, used for all evaluations

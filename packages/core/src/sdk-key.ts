@@ -12,7 +12,7 @@
  *   - keyId → for rotation/revocation tracking
  */
 
-import { base64Decode, base64Encode } from "./hash.js";
+import { base64Decode, base64Encode } from "./hash";
 
 interface DeserializedSdkKey {
   type: "client" | "server";

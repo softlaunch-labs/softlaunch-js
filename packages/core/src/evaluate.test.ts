@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { evaluateAllFlags, evaluateFlag } from "./evaluate.js";
-import { compileClientConfig } from "./obfuscate.js";
-import type { ConfigBlob, EvaluationContext, Flag, Segment } from "./types.js";
+import { evaluateAllFlags, evaluateFlag } from "./evaluate";
+import { compileClientConfig } from "./obfuscate";
+import type { ConfigBlob, EvaluationContext, Flag, Segment } from "./types";
 
 // ---------------------------------------------------------------------------
 // Test helpers

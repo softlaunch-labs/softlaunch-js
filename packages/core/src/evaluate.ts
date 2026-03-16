@@ -20,9 +20,9 @@
  * need to know which format is in use.
  */
 
-import { base64Decode, computeBucket, md5 } from "./hash.js";
-import { buildHashedContextLookup, decodeConditionValue, decodeVariationValue, resolveOperator } from "./obfuscate.js";
-import { evaluateOperator } from "./operators.js";
+import { base64Decode, computeBucket, md5 } from "./hash";
+import { buildHashedContextLookup, decodeConditionValue, decodeVariationValue, resolveOperator } from "./obfuscate";
+import { evaluateOperator } from "./operators";
 import type {
   Condition,
   ConfigBlob,
@@ -36,8 +36,8 @@ import type {
   SegmentRule,
   ServeConfig,
   TargetingRule,
-} from "./types.js";
-import { COMPARISON_OPERATORS, EQUALITY_OPERATORS, LIST_OPERATORS, PATTERN_OPERATORS } from "./types.js";
+} from "./types";
+import { COMPARISON_OPERATORS, EQUALITY_OPERATORS, LIST_OPERATORS, PATTERN_OPERATORS } from "./types";
 
 // ---------------------------------------------------------------------------
 // Public API

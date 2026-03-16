@@ -37,7 +37,7 @@ export type {
   ServeConfig,
   ShardRange,
   TargetingRule,
-} from "./types.js";
+} from "./types";
 
 export {
   COMPARISON_OPERATORS,
@@ -46,19 +46,19 @@ export {
   LIST_OPERATORS,
   OPERATORS,
   PATTERN_OPERATORS,
-} from "./types.js";
+} from "./types";
 
 // Evaluation engine
-export { evaluateAllFlags, evaluateFlag } from "./evaluate.js";
+export { evaluateAllFlags, evaluateFlag } from "./evaluate";
 
 // Operator evaluation (exposed for testing and custom operator implementations)
-export { evaluateOperator } from "./operators.js";
+export { evaluateOperator } from "./operators";
 
 // Hashing utilities
-export { base64Decode, base64Encode, computeBucket, md5 } from "./hash.js";
+export { base64Decode, base64Encode, computeBucket, md5 } from "./hash";
 
 // Obfuscation (server → client config compilation)
-export { compileClientConfig, resolveOperator } from "./obfuscate.js";
+export { compileClientConfig, resolveOperator } from "./obfuscate";
 
 // SDK key serialization/deserialization
-export { deserializeSdkKey, serializeSdkKey } from "./sdk-key.js";
+export { deserializeSdkKey, serializeSdkKey } from "./sdk-key";
