@@ -89,9 +89,9 @@ export function md5(input: string): string {
 /**
  * Compute a deterministic bucket assignment for percentage rollouts.
  *
- * @param salt   - Unique salt for this rollout (e.g., `${flagKey}-${ruleId}`)
- * @param value  - The context value to bucket (typically context.key)
- * @param totalShards - Total number of shards (default 10_000)
+ * @param salt   - Unique salt for this rollout (typically the assignment ID)
+ * @param value  - The subject key to bucket
+ * @param totalShards - Total number of shards
  * @returns Integer in [0, totalShards)
  */
 export function computeBucket(salt: string, value: string, totalShards: number): number {

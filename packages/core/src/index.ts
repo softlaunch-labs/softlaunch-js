@@ -1,64 +1,53 @@
 /**
- * @softlaunch/sdk-core
+ * @softlaunch/core
  *
- * The Softlaunch feature flag evaluation engine.
+ * Feature flag evaluation engine + config blob compiler.
  * Zero dependencies, runs in any JavaScript environment.
- *
- * Used by:
- * - @softlaunch/js (browser SDK)
- * - @softlaunch/react (React SDK)
- * - @softlaunch/node (server SDK)
- * - Softlaunch dashboard (config compilation + test mode)
- * - Softlaunch CLI (local flag evaluation)
  */
 
-// Types — the config blob wire format
+// Types — config blob wire format
 export type {
-  AttributeCondition,
+  Assignment,
+  AssignmentVariation,
+  Audience,
   Condition,
   ConfigBlob,
   ConfigFormat,
-  EvaluationContext,
+  SubjectAttributes,
   EvaluationDetail,
   EvaluationReason,
   Flag,
   FlagType,
   FlagVariation,
-  FixedServeConfig,
-  IndividualTarget,
   Operator,
-  Prerequisite,
-  RolloutServeConfig,
-  RolloutVariation,
-  RuleCondition,
-  Segment,
-  SegmentCondition,
-  SegmentRule,
-  ServeConfig,
+  RuleGroup,
   ShardRange,
-  TargetingRule,
 } from "./types";
 
-export {
-  COMPARISON_OPERATORS,
-  CURRENT_FORMAT_VERSION,
-  EQUALITY_OPERATORS,
-  LIST_OPERATORS,
-  OPERATORS,
-  PATTERN_OPERATORS,
-} from "./types";
+export { CURRENT_FORMAT_VERSION, LIST_OPERATORS, NULL_OPERATORS, OPERATORS } from "./types";
 
 // Evaluation engine
-export { evaluateAllFlags, evaluateFlag } from "./evaluate";
+export { evaluateFlag } from "./evaluate";
 
-// Operator evaluation (exposed for testing and custom operator implementations)
+// Operator evaluation
 export { evaluateOperator } from "./operators";
+
+// Config blob compilation (entities → server blob)
+export { compileConfigBlob } from "./compile";
+export type {
+  CompileInput,
+  EntityAssignment,
+  EntityAudience,
+  EntityFlag,
+  EntityFlagConfig,
+  EntityVariation,
+} from "./compile";
+
+// Obfuscation (server blob → client blob)
+export { compileClientConfig, resolveOperator } from "./obfuscate";
 
 // Hashing utilities
 export { base64Decode, base64Encode, computeBucket, md5 } from "./hash";
-
-// Obfuscation (server → client config compilation)
-export { compileClientConfig, resolveOperator } from "./obfuscate";
 
 // SDK key serialization/deserialization
 export { deserializeSdkKey, serializeSdkKey } from "./sdk-key";

@@ -1,117 +1,61 @@
 /**
  * @module obfuscate
  *
- * Handles compilation of server configs into obfuscated client configs,
- * and provides resolution helpers for evaluating obfuscated configs.
+ * Server → client config compilation (obfuscation) and client-format helpers.
  *
- * Obfuscation strategy (mirrors Eppo's approach):
- *
- * | Field                 | Server format    | Client format         |
- * |-----------------------|------------------|-----------------------|
- * | Flag keys             | plain text       | MD5 hash              |
- * | Flag type             | plain text       | base64                |
- * | Variation keys        | plain text       | base64                |
- * | Variation values      | raw              | base64(JSON.stringify) |
- * | Segment keys          | plain text       | MD5 hash              |
- * | Operator names        | plain text       | MD5 hash              |
- * | Attribute names       | plain text       | MD5 hash              |
- * | Equality values       | plain text       | MD5 hash              |
- * | Pattern values        | plain text       | base64                |
- * | Comparison values     | plain text       | base64                |
- * | Individual target keys| plain text       | MD5 hash              |
- * | Rule IDs              | plain text       | base64                |
- * | Rollout salt          | plain text       | plain text (needed)   |
- * | Rollout bucketBy      | plain text       | MD5 hash              |
- *
- * The client SDK hashes its inputs using the same MD5 function to match
- * against the obfuscated config. This prevents casual inspection of
- * flag names, targeting rules, and user segments via DevTools.
+ * Obfuscation strategy:
+ *   Flag keys, audience IDs, attribute names, equality values → MD5 hash
+ *   Variation IDs/values, pattern values, comparison values → base64
+ *   Operator names → MD5 hash
  */
 
 import { base64Decode, base64Encode, md5 } from "./hash";
-import { COMPARISON_OPERATORS, EQUALITY_OPERATORS, LIST_OPERATORS, OPERATORS, PATTERN_OPERATORS } from "./types";
 import type {
-  AttributeCondition,
+  Assignment,
+  AssignmentVariation,
+  Audience,
   Condition,
   ConfigBlob,
-  EvaluationContext,
   Flag,
-  FlagType,
   FlagVariation,
-  IndividualTarget,
   Operator,
-  Prerequisite,
-  RolloutServeConfig,
-  RuleCondition,
-  Segment,
-  SegmentCondition,
-  SegmentRule,
-  ServeConfig,
-  TargetingRule,
+  RuleGroup,
+  SubjectAttributes,
 } from "./types";
+import { LIST_OPERATORS, NULL_OPERATORS, OPERATORS } from "./types";
 
 // ---------------------------------------------------------------------------
-// Operator hash lookup — built once, used for all evaluations
+// Operator lookup (MD5 hash → operator name)
 // ---------------------------------------------------------------------------
 
-/** Map from MD5(operatorName) → Operator. Built at module load time. */
-const HASHED_OPERATOR_LOOKUP: ReadonlyMap<string, Operator> = buildOperatorLookup();
+const HASHED_OPERATOR_LOOKUP: ReadonlyMap<string, Operator> = new Map(OPERATORS.map((op) => [md5(op), op]));
 
-function buildOperatorLookup(): Map<string, Operator> {
-  const lookup = new Map<string, Operator>();
-  for (const operator of OPERATORS) {
-    lookup.set(md5(operator), operator);
-  }
-  return lookup;
-}
-
-/**
- * Resolve an operator from its plain text or MD5-hashed representation.
- * Returns undefined if the operator is not recognized.
- */
+/** Resolve an operator from plain text (server format) or MD5 hash (client format). */
 export function resolveOperator(operatorIdOrHash: string): Operator | undefined {
-  // Check if it's already a known operator (server format)
   if ((OPERATORS as readonly string[]).includes(operatorIdOrHash)) {
     return operatorIdOrHash as Operator;
   }
-
-  // Try MD5 lookup (client format)
   return HASHED_OPERATOR_LOOKUP.get(operatorIdOrHash);
 }
 
 // ---------------------------------------------------------------------------
-// Client-format context hashing
+// Client-format attribute hashing
 // ---------------------------------------------------------------------------
 
-/**
- * Build a lookup map from MD5(attributeName) → attributeValue for a context.
- * Used when evaluating client-format configs where attribute names are hashed.
- */
-export function buildHashedContextLookup(
-  context: EvaluationContext,
-): ReadonlyMap<string, string | number | boolean | readonly string[] | undefined> {
-  const lookup = new Map<string, string | number | boolean | readonly string[] | undefined>();
-  for (const key of Object.keys(context)) {
-    lookup.set(md5(key), context[key]);
+export function buildHashedAttributeLookup(
+  attributes: SubjectAttributes,
+): ReadonlyMap<string, string | number | boolean | string[]> {
+  const lookup = new Map<string, string | number | boolean | string[]>();
+  for (const key of Object.keys(attributes)) {
+    lookup.set(md5(key), attributes[key]);
   }
   return lookup;
 }
 
-/**
- * Hash a context value for equality comparison against an obfuscated config.
- */
-export function hashContextValue(value: string): string {
-  return md5(value);
-}
-
 // ---------------------------------------------------------------------------
-// Value decoding for client-format configs
+// Value decoding
 // ---------------------------------------------------------------------------
 
-/**
- * Decode a variation value from client format.
- * In client format, values are stored as base64(JSON.stringify(value)).
- */
 export function decodeVariationValue(encodedValue: unknown): unknown {
   if (typeof encodedValue !== "string") return encodedValue;
   try {
@@ -121,24 +65,6 @@ export function decodeVariationValue(encodedValue: unknown): unknown {
   }
 }
 
-/**
- * Decode a flag type from client format (base64-encoded).
- */
-export function decodeFlagType(encodedType: string): FlagType {
-  const decoded = base64Decode(encodedType);
-  if (decoded === "boolean" || decoded === "string" || decoded === "number" || decoded === "json") {
-    return decoded;
-  }
-  // If not recognized, return as-is (may be plain text in server format)
-  if (encodedType === "boolean" || encodedType === "string" || encodedType === "number" || encodedType === "json") {
-    return encodedType;
-  }
-  return "string";
-}
-
-/**
- * Decode a base64-encoded condition value (for pattern/comparison operators).
- */
 export function decodeConditionValue(encodedValue: string): string {
   try {
     return base64Decode(encodedValue);
@@ -148,27 +74,22 @@ export function decodeConditionValue(encodedValue: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// Server → Client config compilation
+// Server → Client compilation
 // ---------------------------------------------------------------------------
 
-/**
- * Compile a server-format config blob into an obfuscated client-format blob.
- * This is called on the server (dashboard/API) when generating the config
- * that browser/mobile SDKs will consume.
- */
 export function compileClientConfig(serverConfig: ConfigBlob): ConfigBlob {
   if (serverConfig.format !== "server") {
     throw new Error("Cannot compile a config that is already in client format");
   }
 
-  const obfuscatedSegments: Record<string, Segment> = {};
-  for (const [segmentKey, segment] of Object.entries(serverConfig.segments)) {
-    obfuscatedSegments[md5(segmentKey)] = obfuscateSegment(segment);
+  const audiences: Record<string, Audience> = {};
+  for (const [audienceId, audience] of Object.entries(serverConfig.audiences)) {
+    audiences[md5(audienceId)] = obfuscateAudience(audience);
   }
 
-  const obfuscatedFlags: Record<string, Flag> = {};
+  const flags: Record<string, Flag> = {};
   for (const [flagKey, flag] of Object.entries(serverConfig.flags)) {
-    obfuscatedFlags[md5(flagKey)] = obfuscateFlag(flag);
+    flags[md5(flagKey)] = obfuscateFlag(flag);
   }
 
   return {
@@ -178,68 +99,55 @@ export function compileClientConfig(serverConfig: ConfigBlob): ConfigBlob {
     version: serverConfig.version,
     generatedAt: serverConfig.generatedAt,
     totalShards: serverConfig.totalShards,
-    segments: obfuscatedSegments,
-    flags: obfuscatedFlags,
+    audiences,
+    flags,
   };
 }
 
 // ---------------------------------------------------------------------------
-// Internal obfuscation helpers
+// Obfuscation helpers
 // ---------------------------------------------------------------------------
 
-function obfuscateSegment(segment: Segment): Segment {
-  return {
-    rules: segment.rules.map(obfuscateSegmentRule),
-  };
+function obfuscateAudience(audience: Audience): Audience {
+  return { rules: audience.rules.map(obfuscateRuleGroup) };
 }
 
-function obfuscateSegmentRule(rule: SegmentRule): SegmentRule {
-  return {
-    conditions: rule.conditions.map(obfuscateCondition),
-  };
+function obfuscateRuleGroup(group: RuleGroup): RuleGroup {
+  return { conditions: group.conditions.map(obfuscateCondition) };
 }
 
 function obfuscateCondition(condition: Condition): Condition {
   const operator = resolveOperator(condition.operator);
-  const obfuscatedOperator = md5(condition.operator);
-  const obfuscatedAttribute = md5(condition.attribute);
+  const hashedOperator = md5(condition.operator);
+  const hashedAttribute = md5(condition.attribute);
 
   if (!operator) {
-    // Unknown operator — hash everything conservatively
     return {
-      attribute: obfuscatedAttribute,
-      operator: obfuscatedOperator,
-      value: typeof condition.value === "string" ? base64Encode(condition.value) : condition.value.map((v) => md5(v)),
+      attribute: hashedAttribute,
+      operator: hashedOperator,
+      value: condition.value === null ? null : base64Encode(String(condition.value)),
     };
   }
 
-  let obfuscatedValue: string | readonly string[];
+  let obfuscatedValue: string | readonly string[] | null;
 
-  if (LIST_OPERATORS.has(operator)) {
-    // Hash each value in the list
-    const values = Array.isArray(condition.value) ? condition.value : [condition.value];
-    obfuscatedValue = (values as readonly string[]).map((v) => md5(v));
-  } else if (EQUALITY_OPERATORS.has(operator)) {
-    // Hash the scalar value
-    obfuscatedValue = md5(String(condition.value));
-  } else if (PATTERN_OPERATORS.has(operator) || COMPARISON_OPERATORS.has(operator)) {
-    // Base64 encode (SDK needs the raw value to evaluate)
-    obfuscatedValue = base64Encode(String(condition.value));
+  if (NULL_OPERATORS.has(operator)) {
+    obfuscatedValue = null;
+  } else if (LIST_OPERATORS.has(operator)) {
+    const values = Array.isArray(condition.value) ? condition.value : [];
+    obfuscatedValue = values.flatMap((v) => (typeof v === "string" ? [md5(v)] : []));
   } else {
+    // Scalar operators (GT, GTE, LT, LTE, MATCHES) — base64 encode
     obfuscatedValue = base64Encode(String(condition.value));
   }
 
-  return {
-    attribute: obfuscatedAttribute,
-    operator: obfuscatedOperator,
-    value: obfuscatedValue,
-  };
+  return { attribute: hashedAttribute, operator: hashedOperator, value: obfuscatedValue };
 }
 
 function obfuscateFlag(flag: Flag): Flag {
-  const obfuscatedVariations: Record<string, FlagVariation> = {};
-  for (const [variationKey, variation] of Object.entries(flag.variations)) {
-    obfuscatedVariations[base64Encode(variationKey)] = {
+  const variations: Record<string, FlagVariation> = {};
+  for (const [variationId, variation] of Object.entries(flag.variations)) {
+    variations[base64Encode(variationId)] = {
       value: base64Encode(JSON.stringify(variation.value)),
     };
   }
@@ -247,66 +155,25 @@ function obfuscateFlag(flag: Flag): Flag {
   return {
     type: base64Encode(flag.type),
     enabled: flag.enabled,
-    variations: obfuscatedVariations,
-    offVariation: base64Encode(flag.offVariation),
-    prerequisites: flag.prerequisites.map(obfuscatePrerequisite),
-    individualTargets: flag.individualTargets.map(obfuscateIndividualTarget),
-    rules: flag.rules.map(obfuscateTargetingRule),
-    fallthrough: obfuscateServeConfig(flag.fallthrough),
+    variations,
+    offVariationId: base64Encode(flag.offVariationId),
+    defaultVariationId: base64Encode(flag.defaultVariationId),
+    assignments: flag.assignments.map(obfuscateAssignment),
   };
 }
 
-function obfuscatePrerequisite(prerequisite: Prerequisite): Prerequisite {
+function obfuscateAssignment(assignment: Assignment): Assignment {
   return {
-    flagKey: md5(prerequisite.flagKey),
-    variationKey: base64Encode(prerequisite.variationKey),
+    id: assignment.id, // Salt stays plain for deterministic hashing
+    audienceId: assignment.audienceId ? md5(assignment.audienceId) : undefined,
+    rules: assignment.rules.map(obfuscateRuleGroup),
+    variations: assignment.variations.map(obfuscateAssignmentVariation),
   };
 }
 
-function obfuscateIndividualTarget(target: IndividualTarget): IndividualTarget {
+function obfuscateAssignmentVariation(av: AssignmentVariation): AssignmentVariation {
   return {
-    variationKey: base64Encode(target.variationKey),
-    contextKeys: target.contextKeys.map((key) => md5(key)),
+    variationId: base64Encode(av.variationId),
+    shardRanges: av.shardRanges,
   };
-}
-
-function obfuscateTargetingRule(rule: TargetingRule): TargetingRule {
-  return {
-    id: base64Encode(rule.id),
-    conditions: rule.conditions.map(obfuscateRuleCondition),
-    serve: obfuscateServeConfig(rule.serve),
-  };
-}
-
-function obfuscateRuleCondition(condition: RuleCondition): RuleCondition {
-  if (condition.type === "segment") {
-    const segmentCondition: SegmentCondition = {
-      type: "segment",
-      segmentKey: md5(condition.segmentKey),
-    };
-    return segmentCondition;
-  }
-
-  const attributeCondition: AttributeCondition = {
-    type: "attribute",
-    condition: obfuscateCondition(condition.condition),
-  };
-  return attributeCondition;
-}
-
-function obfuscateServeConfig(serve: ServeConfig): ServeConfig {
-  if (serve.type === "fixed") {
-    return { type: "fixed", variationKey: base64Encode(serve.variationKey) };
-  }
-
-  const rollout: RolloutServeConfig = {
-    type: "rollout",
-    bucketBy: md5(serve.bucketBy),
-    salt: serve.salt, // Salt stays plain — needed for deterministic hashing
-    variations: serve.variations.map((v) => ({
-      variationKey: base64Encode(v.variationKey),
-      shardRanges: v.shardRanges,
-    })),
-  };
-  return rollout;
 }
