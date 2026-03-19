@@ -27,7 +27,7 @@ export type {
 export { CURRENT_FORMAT_VERSION, LIST_OPERATORS, NULL_OPERATORS, OPERATORS } from "./types";
 
 // Evaluation engine
-export { evaluateFlag } from "./evaluate";
+export { evaluateFlag, resolveFlagType } from "./evaluate";
 
 // Operator evaluation
 export { evaluateOperator } from "./operators";

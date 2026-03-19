@@ -1,5 +1,5 @@
 import { init } from "@instantdb/core";
-import { deserializeSdkKey, evaluateFlag, type ConfigBlob } from "@softlaunch/core";
+import { deserializeSdkKey, evaluateFlag, resolveFlagType, type ConfigBlob } from "@softlaunch/core";
 import schema from "./schema";
 
 /** Targeting attributes for flag evaluation. */
@@ -91,10 +91,8 @@ export class SoftlaunchClient {
     expectedType: string,
   ): T {
     if (!this.config) return defaultValue;
-
-    const flag = this.config.flags[key];
-    if (!flag || flag.type !== expectedType) return defaultValue;
-
+    const flagType = resolveFlagType(this.config, key);
+    if (flagType !== undefined && flagType !== expectedType) return defaultValue;
     return evaluateFlag(this.config, key, subjectKey, attributes, defaultValue).value as T;
   }
 }

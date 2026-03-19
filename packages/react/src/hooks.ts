@@ -1,4 +1,4 @@
-import { evaluateFlag, type SubjectAttributes } from "@softlaunch/core";
+import { evaluateFlag, resolveFlagType, type SubjectAttributes } from "@softlaunch/core";
 import { use, useMemo, useRef } from "react";
 import { SoftlaunchContext } from "./provider";
 
@@ -85,10 +85,8 @@ function useTypedFlag<T>(
 
   const value = useMemo(() => {
     if (!config) return defaultValue;
-
-    const flag = config.flags[key];
-    if (!flag || flag.type !== expectedType) return defaultValue;
-
+    const flagType = resolveFlagType(config, key);
+    if (flagType !== undefined && flagType !== expectedType) return defaultValue;
     return evaluateFlag(config, key, subjectKey, stableAttributes, defaultValue).value;
   }, [config, key, subjectKey, stableAttributes, defaultValue, expectedType]);
 

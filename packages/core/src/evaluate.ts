@@ -18,7 +18,7 @@
  * Format-aware: handles both "server" (plain text) and "client" (obfuscated).
  */
 
-import { computeBucket, md5 } from "./hash";
+import { base64Decode, computeBucket, md5 } from "./hash";
 import { buildHashedAttributeLookup, decodeConditionValue, decodeVariationValue, resolveOperator } from "./obfuscate";
 import { evaluateOperator } from "./operators";
 import type {
@@ -95,6 +95,23 @@ export function evaluateFlag<T>(
 
   const fallthrough = resolveVariation<T>(flag, flag.defaultVariationId, isClient, defaultValue);
   return ok(fallthrough.value, fallthrough.found ? flag.defaultVariationId : undefined, "DEFAULT", undefined);
+}
+
+// ---------------------------------------------------------------------------
+// Flag type resolution (for SDK-level type checks)
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolve the type of a flag, handling both server (plain) and client (base64-encoded) formats.
+ * Returns undefined if the flag doesn't exist. SDKs use this to return the default value
+ * when the caller expects a different type than the flag's actual type.
+ */
+export function resolveFlagType(config: ConfigBlob, flagKey: string): string | undefined {
+  const isClient = config.format === "client";
+  const lookupKey = isClient ? md5(flagKey) : flagKey;
+  const flag = config.flags[lookupKey];
+  if (!flag) return undefined;
+  return isClient ? base64Decode(flag.type) : flag.type;
 }
 
 // ---------------------------------------------------------------------------
