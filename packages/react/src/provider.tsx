@@ -13,13 +13,17 @@ import React, { createContext, useEffect, useMemo, useRef, useState } from "reac
 
 export interface SoftlaunchContextValue {
   config: ConfigBlob | undefined;
+  /** True only on initial load when no config exists yet. */
   isLoading: boolean;
+  /** True when re-fetching in the background (previous config still available). */
+  isFetching: boolean;
   error: string | undefined;
 }
 
 export const SoftlaunchContext = createContext<SoftlaunchContextValue>({
   config: undefined,
   isLoading: true,
+  isFetching: false,
   error: undefined,
 });
 
@@ -35,7 +39,7 @@ export function SoftlaunchProvider({ sdkKey, children }: { sdkKey: string; child
       console.warn("[Softlaunch] Invalid SDK key provided to SoftlaunchProvider");
     }
     return (
-      <SoftlaunchContext value={{ config: undefined, isLoading: false, error: "Invalid SDK key" }}>
+      <SoftlaunchContext value={{ config: undefined, isLoading: false, isFetching: false, error: "Invalid SDK key" }}>
         {children}
       </SoftlaunchContext>
     );
@@ -62,10 +66,10 @@ export function SoftlaunchProvider({ sdkKey, children }: { sdkKey: string; child
 // ---------------------------------------------------------------------------
 
 type FetchState =
-  | { status: "idle" }
-  | { status: "loading" }
+  | { status: "idle"; config: undefined }
+  | { status: "loading"; config: ConfigBlob | undefined }
   | { status: "success"; config: ConfigBlob }
-  | { status: "error"; error: string };
+  | { status: "error"; error: string; config: ConfigBlob | undefined };
 
 function SoftlaunchConnector({
   type,
@@ -96,7 +100,7 @@ function SoftlaunchConnector({
   const fileUrl = file && "url" in file && typeof file.url === "string" ? file.url : undefined;
 
   // Fetch the config blob from the URL
-  const [fetchState, setFetchState] = useState<FetchState>({ status: "idle" });
+  const [fetchState, setFetchState] = useState<FetchState>({ status: "idle", config: undefined });
   const lastUrlRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
@@ -105,7 +109,7 @@ function SoftlaunchConnector({
     lastUrlRef.current = fileUrl;
 
     let cancelled = false;
-    setFetchState({ status: "loading" });
+    setFetchState((prev) => ({ status: "loading", config: prev.config }));
 
     fetch(fileUrl)
       .then((r) => {
@@ -117,7 +121,11 @@ function SoftlaunchConnector({
       })
       .catch((err) => {
         if (!cancelled) {
-          setFetchState({ status: "error", error: err instanceof Error ? err.message : "Fetch failed" });
+          setFetchState((prev) => ({
+            status: "error",
+            error: err instanceof Error ? err.message : "Fetch failed",
+            config: prev.config,
+          }));
         }
       });
 
@@ -128,30 +136,38 @@ function SoftlaunchConnector({
 
   // Derive context value from query + fetch states
   const contextValue = useMemo((): SoftlaunchContextValue => {
+    const previousConfig = fetchState.config;
+    const hasData = previousConfig !== undefined;
+
     // Query error
     if (queryError) {
-      return { config: undefined, isLoading: false, error: queryError.message };
+      return { config: previousConfig, isLoading: false, isFetching: false, error: queryError.message };
     }
 
     // Query still loading
     if (queryLoading) {
-      return { config: undefined, isLoading: true, error: undefined };
+      return { config: previousConfig, isLoading: !hasData, isFetching: hasData, error: undefined };
     }
 
     // Query done but no file exists
     if (!fileUrl) {
-      return { config: undefined, isLoading: false, error: "Config blob not found" };
+      return {
+        config: previousConfig,
+        isLoading: !hasData,
+        isFetching: false,
+        error: hasData ? undefined : "Config blob not found",
+      };
     }
 
     // Fetch states
     switch (fetchState.status) {
       case "idle":
       case "loading":
-        return { config: undefined, isLoading: true, error: undefined };
+        return { config: previousConfig, isLoading: !hasData, isFetching: hasData, error: undefined };
       case "success":
-        return { config: fetchState.config, isLoading: false, error: undefined };
+        return { config: fetchState.config, isLoading: false, isFetching: false, error: undefined };
       case "error":
-        return { config: undefined, isLoading: false, error: fetchState.error };
+        return { config: previousConfig, isLoading: false, isFetching: false, error: fetchState.error };
     }
   }, [queryLoading, queryError, fileUrl, fetchState]);
 

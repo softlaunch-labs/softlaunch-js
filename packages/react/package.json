@@ -1,6 +1,6 @@
 {
   "name": "@softlaunch/react",
-  "version": "0.1.0-beta.2",
+  "version": "0.1.0-beta.3",
   "description": "Softlaunch feature flag SDK for React",
   "type": "module",
   "main": "src/index.ts",

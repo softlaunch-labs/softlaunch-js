@@ -3,14 +3,15 @@ import { use, useMemo, useRef } from "react";
 import { SoftlaunchContext } from "./provider";
 
 /**
- * Return type for all flag hooks. States are mutually exclusive:
- *   { isLoading: true,  error: undefined } — config is being fetched
- *   { isLoading: false, error: undefined } — config loaded, value is evaluated
- *   { isLoading: false, error: string    } — config failed to load, value is default
+ * Return type for all flag hooks.
+ *   isLoading  — first load, no config yet, value is the default
+ *   isFetching — re-fetching in background, value is from previous config (stale but usable)
+ *   error      — fetch failed, value is the default (or previous if available)
  */
 export interface FlagResult<T> {
   value: T;
   isLoading: boolean;
+  isFetching: boolean;
   error: string | undefined;
 }
 
@@ -74,7 +75,7 @@ function useTypedFlag<T>(
   defaultValue: T,
   expectedType: string,
 ): FlagResult<T> {
-  const { config, isLoading, error } = use(SoftlaunchContext);
+  const { config, isLoading, isFetching, error } = use(SoftlaunchContext);
 
   // Stable attributes reference — shallow compare to avoid unnecessary re-evaluations
   const attributesRef = useRef(attributes);
@@ -90,7 +91,7 @@ function useTypedFlag<T>(
     return evaluateFlag(config, key, subjectKey, stableAttributes, defaultValue).value;
   }, [config, key, subjectKey, stableAttributes, defaultValue, expectedType]);
 
-  return { value, isLoading, error };
+  return { value, isLoading, isFetching, error };
 }
 
 function shallowEqual(a: Record<string, unknown>, b: Record<string, unknown>): boolean {
