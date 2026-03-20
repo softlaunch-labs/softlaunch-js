@@ -13,8 +13,7 @@ function makeConfig(flags: Record<string, Flag>, audiences?: ConfigBlob["audienc
     formatVersion: 1,
     format: "server",
     environment: "test",
-    version: 1,
-    generatedAt: Date.now(),
+    updatedAt: Date.now(),
     totalShards: 10_000,
     audiences: audiences ?? {},
     flags,
@@ -703,7 +702,15 @@ describe("compiler", () => {
         { id: "v2", name: "False", value: false, position: 1, flagId: "f1" },
       ],
       flagConfigs: [
-        { id: "fc1", enabled: true, offVariationId: "v2", defaultVariationId: "v2", flagId: "f1", envId: "env-1" },
+        {
+          id: "fc1",
+          enabled: true,
+          offVariationId: "v2",
+          defaultVariationId: "v2",
+          updatedAt: 1,
+          flagId: "f1",
+          envId: "env-1",
+        },
       ],
       assignments: [
         {
@@ -728,7 +735,15 @@ describe("compiler", () => {
       flags: [{ id: "f1", key: "archived", type: "boolean", archivedAt: Date.now() }],
       variations: [{ id: "v1", name: "T", value: true, position: 0, flagId: "f1" }],
       flagConfigs: [
-        { id: "fc1", enabled: true, offVariationId: "v1", defaultVariationId: "v1", flagId: "f1", envId: "env-1" },
+        {
+          id: "fc1",
+          enabled: true,
+          offVariationId: "v1",
+          defaultVariationId: "v1",
+          updatedAt: 1,
+          flagId: "f1",
+          envId: "env-1",
+        },
       ],
       assignments: [],
       audiences: [],
@@ -742,7 +757,15 @@ describe("compiler", () => {
       flags: [{ id: "f1", key: "no-config", type: "boolean" }],
       variations: [{ id: "v1", name: "T", value: true, position: 0, flagId: "f1" }],
       flagConfigs: [
-        { id: "fc1", enabled: true, offVariationId: "v1", defaultVariationId: "v1", flagId: "f1", envId: "env-OTHER" },
+        {
+          id: "fc1",
+          enabled: true,
+          offVariationId: "v1",
+          defaultVariationId: "v1",
+          updatedAt: 1,
+          flagId: "f1",
+          envId: "env-OTHER",
+        },
       ],
       assignments: [],
       audiences: [],
@@ -764,8 +787,24 @@ describe("compiler", () => {
         { id: "v4", name: "Treat", value: "treat", position: 1, flagId: "f2" },
       ],
       flagConfigs: [
-        { id: "fc1", enabled: true, offVariationId: "v2", defaultVariationId: "v2", flagId: "f1", envId: "e1" },
-        { id: "fc2", enabled: true, offVariationId: "v3", defaultVariationId: "v3", flagId: "f2", envId: "e1" },
+        {
+          id: "fc1",
+          enabled: true,
+          offVariationId: "v2",
+          defaultVariationId: "v2",
+          updatedAt: 1,
+          flagId: "f1",
+          envId: "e1",
+        },
+        {
+          id: "fc2",
+          enabled: true,
+          offVariationId: "v3",
+          defaultVariationId: "v3",
+          updatedAt: 1,
+          flagId: "f2",
+          envId: "e1",
+        },
       ],
       assignments: [
         {
@@ -802,7 +841,15 @@ describe("compiler", () => {
         { id: "v2", name: "F", value: false, position: 1, flagId: "f1" },
       ],
       flagConfigs: [
-        { id: "fc1", enabled: true, offVariationId: "v2", defaultVariationId: "v2", flagId: "f1", envId: "e1" },
+        {
+          id: "fc1",
+          enabled: true,
+          offVariationId: "v2",
+          defaultVariationId: "v2",
+          updatedAt: 1,
+          flagId: "f1",
+          envId: "e1",
+        },
       ],
       assignments: [
         {
@@ -838,7 +885,15 @@ describe("compiler", () => {
         { id: "vc", name: "C", value: "c", position: 2, flagId: "f1" },
       ],
       flagConfigs: [
-        { id: "fc1", enabled: true, offVariationId: "vc", defaultVariationId: "vc", flagId: "f1", envId: "e1" },
+        {
+          id: "fc1",
+          enabled: true,
+          offVariationId: "vc",
+          defaultVariationId: "vc",
+          updatedAt: 1,
+          flagId: "f1",
+          envId: "e1",
+        },
       ],
       assignments: [
         // Inserted out of order
@@ -876,7 +931,15 @@ describe("compiler", () => {
         { id: "v2", name: "B", value: false, position: 1, flagId: "f1" },
       ],
       flagConfigs: [
-        { id: "fc1", enabled: true, offVariationId: "v2", defaultVariationId: "v2", flagId: "f1", envId: "e1" },
+        {
+          id: "fc1",
+          enabled: true,
+          offVariationId: "v2",
+          defaultVariationId: "v2",
+          updatedAt: 1,
+          flagId: "f1",
+          envId: "e1",
+        },
       ],
       assignments: [
         {
@@ -905,7 +968,15 @@ describe("compiler", () => {
       flags: [{ id: "f1", key: "f", type: "boolean" }],
       variations: [{ id: "v1", name: "T", value: true, position: 0, flagId: "f1" }],
       flagConfigs: [
-        { id: "fc1", enabled: true, offVariationId: "v1", defaultVariationId: "v1", flagId: "f1", envId: "e1" },
+        {
+          id: "fc1",
+          enabled: true,
+          offVariationId: "v1",
+          defaultVariationId: "v1",
+          updatedAt: 1,
+          flagId: "f1",
+          envId: "e1",
+        },
       ],
       assignments: [
         {
@@ -933,7 +1004,15 @@ describe("compiler", () => {
         { id: "v2", name: "F", value: false, position: 1, flagId: "f1" },
       ],
       flagConfigs: [
-        { id: "fc1", enabled: true, offVariationId: "v2", defaultVariationId: "v2", flagId: "f1", envId: "e1" },
+        {
+          id: "fc1",
+          enabled: true,
+          offVariationId: "v2",
+          defaultVariationId: "v2",
+          updatedAt: 1,
+          flagId: "f1",
+          envId: "e1",
+        },
       ],
       assignments: [
         {
@@ -964,7 +1043,15 @@ describe("compiler", () => {
         { id: "c", name: "C", value: "c", position: 2, flagId: "f1" },
       ],
       flagConfigs: [
-        { id: "fc1", enabled: true, offVariationId: "a", defaultVariationId: "a", flagId: "f1", envId: "e1" },
+        {
+          id: "fc1",
+          enabled: true,
+          offVariationId: "a",
+          defaultVariationId: "a",
+          updatedAt: 1,
+          flagId: "f1",
+          envId: "e1",
+        },
       ],
       assignments: [
         {
@@ -999,7 +1086,15 @@ describe("compiler", () => {
       flags: [{ id: "f1", key: "f", type: "boolean" }],
       variations: [], // No variations for this flag
       flagConfigs: [
-        { id: "fc1", enabled: true, offVariationId: "v1", defaultVariationId: "v1", flagId: "f1", envId: "e1" },
+        {
+          id: "fc1",
+          enabled: true,
+          offVariationId: "v1",
+          defaultVariationId: "v1",
+          updatedAt: 1,
+          flagId: "f1",
+          envId: "e1",
+        },
       ],
       assignments: [],
       audiences: [],
@@ -1013,7 +1108,15 @@ describe("compiler", () => {
       flags: [{ id: "f1", key: "f", type: "boolean" }],
       variations: [{ id: "v1", name: "T", value: true, position: 0, flagId: "f1" }],
       flagConfigs: [
-        { id: "fc1", enabled: true, offVariationId: "v1", defaultVariationId: "v1", flagId: "f1", envId: "e1" },
+        {
+          id: "fc1",
+          enabled: true,
+          offVariationId: "v1",
+          defaultVariationId: "v1",
+          updatedAt: 1,
+          flagId: "f1",
+          envId: "e1",
+        },
       ],
       assignments: [
         {
@@ -1413,7 +1516,15 @@ describe("compiler edge cases", () => {
         { id: "v2", name: "F", value: false, position: 1, flagId: "f1" },
       ],
       flagConfigs: [
-        { id: "fc1", enabled: true, offVariationId: "v2", defaultVariationId: "v2", flagId: "f1", envId: "e1" },
+        {
+          id: "fc1",
+          enabled: true,
+          offVariationId: "v2",
+          defaultVariationId: "v2",
+          updatedAt: 1,
+          flagId: "f1",
+          envId: "e1",
+        },
       ],
       assignments: [
         {

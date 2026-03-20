@@ -38,8 +38,6 @@ export interface CompileInput {
   audiences: EntityAudience[];
   /** Defaults to 10_000. */
   totalShards?: number;
-  /** Monotonically increasing version. Caller manages this. */
-  version?: number;
 }
 
 export interface EntityFlag {
@@ -62,6 +60,7 @@ export interface EntityFlagConfig {
   enabled: boolean;
   offVariationId: string;
   defaultVariationId: string;
+  updatedAt: number;
   flagId: string;
   envId: string;
 }
@@ -136,12 +135,15 @@ export function compileConfigBlob(input: CompileInput): ConfigBlob {
     };
   }
 
+  // updatedAt = max across all flagConfigs for this env (the dedup key for compilation)
+  const envConfigs = input.flagConfigs.filter((c) => c.envId === input.envId);
+  const updatedAt = envConfigs.reduce((max, c) => Math.max(max, c.updatedAt), 0);
+
   return {
     formatVersion: CURRENT_FORMAT_VERSION,
     format: "server",
     environment: input.envId,
-    version: input.version ?? 1,
-    generatedAt: Date.now(),
+    updatedAt,
     totalShards,
     audiences,
     flags,

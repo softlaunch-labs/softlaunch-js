@@ -35,9 +35,8 @@ export interface ConfigBlob {
   readonly format: ConfigFormat;
   /** Environment ID this config was compiled for. */
   readonly environment: string;
-  /** Monotonically increasing. Higher = newer. */
-  readonly version: number;
-  readonly generatedAt: number;
+  /** Max updatedAt across all flagConfigs in this env. Used as dedup key for compilation. */
+  readonly updatedAt: number;
   /** All shard ranges in [0, totalShards). Default: 10_000. */
   readonly totalShards: number;
   /** Keyed by audience ID (or MD5 hash in client format). */
