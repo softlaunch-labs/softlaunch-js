@@ -1,13 +1,24 @@
 /**
  * @softlaunch/js
  *
- * Vanilla JavaScript SDK for Softlaunch feature flags.
- * Fetch-once: init() loads config, get*Flag() evaluates locally.
+ * Vanilla JavaScript SDK for Softlaunch feature flags. Real-time: the client
+ * stays subscribed and updates its config when flags change.
  *
- *   const client = await SoftlaunchClient.init({ sdkKey: "slc_..." })
- *   const show = client.getBooleanFlag("show-dashboard", "user-123", { plan: "pro" }, false)
- *   client.destroy()
+ *   import { init } from "@softlaunch/js";
+ *
+ *   const client = init({ sdkKey: "slc_..." });
+ *   await client.waitUntilReady();
+ *
+ *   const showCheckout = client.getBooleanFlag("checkout-redesign", "user-123", { plan: "pro" }, false);
+ *
+ *   // React to flag changes in real time
+ *   const unsubscribe = client.subscribe(() => {
+ *     render(client.getBooleanFlag("checkout-redesign", "user-123", { plan: "pro" }, false));
+ *   });
+ *
+ *   client.close();
  */
 
-export { SoftlaunchClient } from "./client";
-export type { FlagAttributes } from "./client";
+export { init } from "./client";
+export type { SoftlaunchClient, SoftlaunchConfig, SoftlaunchStatus } from "./client";
+export type { SubjectAttributes } from "@softlaunch/core";
