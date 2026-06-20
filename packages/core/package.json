@@ -1,6 +1,6 @@
 {
   "name": "@softlaunch/core",
-  "version": "0.1.0-beta.3",
+  "version": "0.1.0",
   "description": "Softlaunch feature flag evaluation engine",
   "repository": {
     "type": "git",
