@@ -1,6 +1,6 @@
 {
   "name": "@softlaunch/core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Softlaunch feature flag evaluation engine",
   "keywords": [
     "softlaunch",
