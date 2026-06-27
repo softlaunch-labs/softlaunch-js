@@ -1,6 +1,6 @@
 {
   "name": "@softlaunch/js",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Softlaunch feature flag SDK for JavaScript",
   "keywords": [
     "softlaunch",
