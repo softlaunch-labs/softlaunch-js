@@ -55,6 +55,7 @@
     "@softlaunch/core": "workspace:*"
   },
   "devDependencies": {
+    "@workspace/typescript-config": "workspace:*",
     "tsup": "^8.4.0",
     "typescript": "5.9.3"
   }

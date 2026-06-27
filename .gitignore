@@ -3,3 +3,6 @@ dist/
 coverage/
 .turbo/
 *.tsbuildinfo
+
+# Editor-specific skill mirror
+.claude/
