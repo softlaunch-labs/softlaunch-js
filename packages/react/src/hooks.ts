@@ -1,5 +1,5 @@
 import { evaluateFlag, resolveFlagType, type SubjectAttributes } from "@softlaunch/core";
-import { use, useMemo, useRef } from "react";
+import { useContext, useMemo, useRef } from "react";
 import { SoftlaunchContext } from "./provider";
 
 /**
@@ -75,7 +75,7 @@ function useTypedFlag<T>(
   defaultValue: T,
   expectedType: string,
 ): FlagResult<T> {
-  const { config, isLoading, isFetching, error } = use(SoftlaunchContext);
+  const { config, isLoading, isFetching, error } = useContext(SoftlaunchContext);
 
   // Stable attributes reference — shallow compare to avoid unnecessary re-evaluations
   const attributesRef = useRef(attributes);

@@ -39,9 +39,11 @@ export function SoftlaunchProvider({ sdkKey, children }: { sdkKey: string; child
       console.warn("[Softlaunch] Invalid SDK key provided to SoftlaunchProvider");
     }
     return (
-      <SoftlaunchContext value={{ config: undefined, isLoading: false, isFetching: false, error: "Invalid SDK key" }}>
+      <SoftlaunchContext.Provider
+        value={{ config: undefined, isLoading: false, isFetching: false, error: "Invalid SDK key" }}
+      >
         {children}
-      </SoftlaunchContext>
+      </SoftlaunchContext.Provider>
     );
   }
 
@@ -171,5 +173,5 @@ function SoftlaunchConnector({
     }
   }, [queryLoading, queryError, fileUrl, fetchState]);
 
-  return <SoftlaunchContext value={contextValue}>{children}</SoftlaunchContext>;
+  return <SoftlaunchContext.Provider value={contextValue}>{children}</SoftlaunchContext.Provider>;
 }
