@@ -1,0 +1,37 @@
+{
+  "name": "softlaunch-js",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Softlaunch feature flag SDKs for JavaScript, TypeScript, and React.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/softlaunch-labs/softlaunch-js.git"
+  },
+  "license": "MIT",
+  "packageManager": "pnpm@10.14.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "test": "turbo test",
+    "typecheck": "turbo typecheck",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@ianvs/prettier-plugin-sort-imports": "^4.4.1",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "globals": "^17.2.0",
+    "prettier": "^3.8.1",
+    "turbo": "^2.8.8",
+    "typescript": "5.9.3",
+    "typescript-eslint": "^8.54.0"
+  }
+}

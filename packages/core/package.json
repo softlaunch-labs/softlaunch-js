@@ -2,11 +2,21 @@
   "name": "@softlaunch/core",
   "version": "0.1.0",
   "description": "Softlaunch feature flag evaluation engine",
+  "keywords": [
+    "softlaunch",
+    "feature-flags",
+    "feature-flag",
+    "feature-toggle",
+    "evaluation"
+  ],
+  "homepage": "https://github.com/softlaunch-labs/softlaunch-js/tree/main/packages/core#readme",
+  "bugs": "https://github.com/softlaunch-labs/softlaunch-js/issues",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ayoung19/softlaunch.git",
-    "directory": "packages/sdk-core"
+    "url": "git+https://github.com/softlaunch-labs/softlaunch-js.git",
+    "directory": "packages/core"
   },
+  "license": "MIT",
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
@@ -45,7 +55,6 @@
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^3.1.1",
-    "@workspace/typescript-config": "workspace:*",
     "tsup": "^8.4.0",
     "typescript": "5.9.3",
     "vitest": "^3.1.1"

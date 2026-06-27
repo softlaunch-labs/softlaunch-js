@@ -1,0 +1,139 @@
+# Publish an SDK package to npm.
+#
+# Manually triggered: pick a package + bump type, and this bumps the version,
+# builds, publishes to npm with provenance, then pushes the bump commit + tag.
+#
+# Auth uses npm Trusted Publishing (OIDC) — no token. The npm CLI (>= 11.5.1)
+# performs the OIDC exchange; pnpm only packs the tarball (which resolves
+# workspace:* deps to real versions — npm itself can't). One-time setup on
+# npmjs.com per package: Settings → Trusted Publishers → add GitHub Actions with
+#   Organization/user: softlaunch-labs   Repository: softlaunch-js
+#   Workflow filename: publish.yml   Environment: (leave blank)
+# Provenance is emitted — this repo is public, which npm requires for provenance.
+
+name: Publish SDK
+run-name: "Publish ${{ inputs.package }} (${{ startsWith(inputs.bump, 'pre') && format('{0}/{1}', inputs.bump, inputs.preid) || inputs.bump }})"
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: SDK to publish
+        type: choice
+        required: true
+        options:
+          - "@softlaunch/core"
+          - "@softlaunch/react"
+          - "@softlaunch/js"
+      bump:
+        description: Version bump
+        type: choice
+        required: true
+        default: prerelease
+        options:
+          - prerelease # continue a beta series: 0.1.0-beta.0 → 0.1.0-beta.1
+          - prepatch # start a beta off a patch:  0.1.0 → 0.1.1-beta.0
+          - preminor # start a beta off a minor:  0.1.0 → 0.2.0-beta.0
+          - premajor # start a beta off a major:  0.1.0 → 1.0.0-beta.0
+          - patch # stable / graduate a beta:  0.1.0-beta.1 → 0.1.0
+          - minor
+          - major
+      preid:
+        description: Prerelease identifier (used by the pre* bumps)
+        type: string
+        required: false
+        default: beta
+
+permissions:
+  contents: write # push the version-bump commit + tag
+  id-token: write # OIDC trusted publishing + provenance
+
+concurrency:
+  group: publish-sdk
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history so the bump can rebase onto a moved main
+
+      - uses: pnpm/action-setup@v4
+
+      # Node 24 + a guaranteed-current npm: OIDC trusted publishing needs npm >= 11.5.1.
+      # No registry-url here on purpose — that writes an empty-token .npmrc line that
+      # can suppress the OIDC fallback; npm defaults to the npmjs.org registry anyway.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: npm install -g npm@latest
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Resolve package
+        id: pkg
+        run: |
+          case "${{ inputs.package }}" in
+            "@softlaunch/core")  dir="packages/core" ;;
+            "@softlaunch/react") dir="packages/react" ;;
+            "@softlaunch/js")    dir="packages/js" ;;
+            *) echo "::error::Unknown package ${{ inputs.package }}"; exit 1 ;;
+          esac
+          echo "dir=$dir" >> "$GITHUB_OUTPUT"
+
+      - name: Bump version
+        id: bump
+        working-directory: ${{ steps.pkg.outputs.dir }}
+        run: |
+          npm version "${{ inputs.bump }}" --preid "${{ inputs.preid }}" --no-git-tag-version
+          new="$(node -p "require('./package.json').version")"
+          echo "new=$new" >> "$GITHUB_OUTPUT"
+          # Prerelease versions (contain a hyphen) publish under the preid dist-tag, not 'latest'
+          if [[ "$new" == *-* ]]; then
+            echo "tag=${{ inputs.preid }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build
+        run: pnpm exec turbo build --filter="${{ inputs.package }}"
+
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "${{ steps.pkg.outputs.dir }}/package.json"
+          git commit -m "release: ${{ inputs.package }}@${{ steps.bump.outputs.new }} [skip ci]"
+
+      # pnpm packs the tarball (resolving workspace:* → real versions); the npm CLI
+      # publishes that tarball via OIDC trusted publishing, with provenance.
+      - name: Publish
+        working-directory: ${{ steps.pkg.outputs.dir }}
+        run: |
+          tarball_dir="$(mktemp -d)"
+          pnpm pack --pack-destination "$tarball_dir"
+          npm publish "$tarball_dir"/*.tgz --access public --provenance --tag "${{ steps.bump.outputs.tag }}"
+
+      # The branch may have moved since checkout (a manual push, another workflow),
+      # so re-base the one-file bump commit onto the latest main and retry. The tag is
+      # (re)created after each rebase because rebase rewrites the commit SHA.
+      - name: Push commit + tag
+        run: |
+          tag="${{ inputs.package }}@${{ steps.bump.outputs.new }}"
+          for attempt in 1 2 3 4 5; do
+            git fetch origin "${{ github.ref_name }}"
+            if ! git rebase "origin/${{ github.ref_name }}"; then
+              git rebase --abort || true
+              sleep $((attempt * 3)); continue
+            fi
+            git tag -f -a "$tag" -m "$tag"
+            if git push --follow-tags origin "HEAD:${{ github.ref_name }}"; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          echo "::error::Failed to push the version bump after retries"
+          exit 1

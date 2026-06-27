@@ -2,11 +2,21 @@
   "name": "@softlaunch/js",
   "version": "0.1.1",
   "description": "Softlaunch feature flag SDK for JavaScript",
+  "keywords": [
+    "softlaunch",
+    "feature-flags",
+    "feature-flag",
+    "feature-toggle",
+    "javascript"
+  ],
+  "homepage": "https://github.com/softlaunch-labs/softlaunch-js/tree/main/packages/js#readme",
+  "bugs": "https://github.com/softlaunch-labs/softlaunch-js/issues",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ayoung19/softlaunch.git",
-    "directory": "packages/sdk-js"
+    "url": "git+https://github.com/softlaunch-labs/softlaunch-js.git",
+    "directory": "packages/js"
   },
+  "license": "MIT",
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
@@ -45,7 +55,6 @@
     "@softlaunch/core": "workspace:*"
   },
   "devDependencies": {
-    "@workspace/typescript-config": "workspace:*",
     "tsup": "^8.4.0",
     "typescript": "5.9.3"
   }

@@ -2,11 +2,22 @@
   "name": "@softlaunch/react",
   "version": "0.1.1",
   "description": "Softlaunch feature flag SDK for React",
+  "keywords": [
+    "softlaunch",
+    "feature-flags",
+    "feature-flag",
+    "feature-toggle",
+    "react",
+    "hooks"
+  ],
+  "homepage": "https://github.com/softlaunch-labs/softlaunch-js/tree/main/packages/react#readme",
+  "bugs": "https://github.com/softlaunch-labs/softlaunch-js/issues",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ayoung19/softlaunch.git",
-    "directory": "packages/sdk-react"
+    "url": "git+https://github.com/softlaunch-labs/softlaunch-js.git",
+    "directory": "packages/react"
   },
+  "license": "MIT",
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
@@ -50,7 +61,6 @@
   "devDependencies": {
     "@types/node": "^25.1.0",
     "@types/react": "^19.2.10",
-    "@workspace/typescript-config": "workspace:*",
     "react": "^19.2.4",
     "tsup": "^8.4.0",
     "typescript": "5.9.3"
