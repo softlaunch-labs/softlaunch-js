@@ -1,7 +1,7 @@
 # Publish an SDK package to npm.
 #
 # Manually triggered: pick a package + bump type, and this bumps the version,
-# builds, publishes to npm, then pushes the bump commit + tag.
+# builds, publishes to npm with provenance, then pushes the bump commit + tag.
 #
 # Auth uses npm Trusted Publishing (OIDC) — no token. The npm CLI (>= 11.5.1)
 # performs the OIDC exchange; pnpm only packs the tarball (which resolves
@@ -9,8 +9,7 @@
 # npmjs.com per package: Settings → Trusted Publishers → add GitHub Actions with
 #   Organization/user: softlaunch-labs   Repository: softlaunch-js
 #   Workflow filename: publish.yml   Environment: (leave blank)
-# Provenance is NOT emitted — npm only allows it from public repos, and this repo
-# is private. To enable it later: flip the repo public, then add --provenance below.
+# Provenance is emitted — this repo is public, which npm requires for provenance.
 
 name: Publish SDK
 run-name: "Publish ${{ inputs.package }} (${{ startsWith(inputs.bump, 'pre') && format('{0}/{1}', inputs.bump, inputs.preid) || inputs.bump }})"
@@ -110,13 +109,13 @@ jobs:
           git commit -m "release: ${{ inputs.package }}@${{ steps.bump.outputs.new }} [skip ci]"
 
       # pnpm packs the tarball (resolving workspace:* → real versions); the npm CLI
-      # publishes that tarball via OIDC trusted publishing.
+      # publishes that tarball via OIDC trusted publishing, with provenance.
       - name: Publish
         working-directory: ${{ steps.pkg.outputs.dir }}
         run: |
           tarball_dir="$(mktemp -d)"
           pnpm pack --pack-destination "$tarball_dir"
-          npm publish "$tarball_dir"/*.tgz --access public --tag "${{ steps.bump.outputs.tag }}"
+          npm publish "$tarball_dir"/*.tgz --access public --provenance --tag "${{ steps.bump.outputs.tag }}"
 
       # The branch may have moved since checkout (a manual push, another workflow),
       # so re-base the one-file bump commit onto the latest main and retry. The tag is
