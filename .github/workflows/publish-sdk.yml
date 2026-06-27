@@ -8,7 +8,7 @@
 # workspace:* deps to real versions — npm itself can't). One-time setup on
 # npmjs.com per package: Settings → Trusted Publishers → add GitHub Actions with
 #   Organization/user: softlaunch-labs   Repository: softlaunch-js
-#   Workflow filename: publish.yml   Environment: (leave blank)
+#   Workflow filename: publish-sdk.yml   Environment: (leave blank)
 # Provenance is emitted — this repo is public, which npm requires for provenance.
 
 name: Publish SDK
